@@ -3,6 +3,7 @@
 ## Context
 
 Влад ест хаотично, не контролирует КБЖУ, хочет готовить дома по плану. Приложение решает:
+
 - Планирование блюд на неделю (6 дней, воскресенье — выходной)
 - Автоматический расчёт КБЖУ на день / неделю
 - Управление холодильником и списком покупок (2 похода в магазин в неделю)
@@ -11,6 +12,7 @@
 - Аналитика питания (ретроспектива по дням)
 
 **Решения:**
+
 - Auth: нет (single-user, без логина)
 - AI: Claude claude-haiku-4-5 (голос → текст → парсинг + поиск КБЖУ новых продуктов)
 - Figma: Untitled UI — FREE Figma UI kit and design system v2.0
@@ -31,17 +33,18 @@
 4. **shadcn/ui** — инициализировать (`npx shadcn@latest init`), выбрать нужные компоненты
 5. **Supabase** — создать проект через MCP, настроить `.env.local`
 6. **Supabase schema** — создать миграцию с таблицами:
-   - `ingredients` (id, name, unit, calories_per_100g, protein, fat, carbs, category)
-   - `dishes` (id, name, description, meal_type: 'main'|'side'|'dessert')
-   - `dish_ingredients` (dish_id, ingredient_id, amount_g)
-   - `meal_plan` (id, date, slot: 'meal1'|'meal2'|'meal3', dish_id)
-   - `pantry` (id, ingredient_id, amount_g, updated_at)
-   - `shopping_list` (id, ingredient_id, amount_g, purchased: bool, week_start_date)
-   - `food_log` (id, date, dish_id, custom_note, total_calories, total_protein, total_fat, total_carbs)
+  - `ingredients` (id, name, unit, calories_per_100g, protein, fat, carbs, category)
+  - `dishes` (id, name, description, meal_type: 'main'|'side'|'dessert')
+  - `dish_ingredients` (dish_id, ingredient_id, amount_g)
+  - `meal_plan` (id, date, slot: 'meal1'|'meal2'|'meal3', dish_id)
+  - `pantry` (id, ingredient_id, amount_g, updated_at)
+  - `shopping_list` (id, ingredient_id, amount_g, purchased: bool, week_start_date)
+  - `food_log` (id, date, dish_id, custom_note, total_calories, total_protein, total_fat, total_carbs)
 7. **TypeScript types** — сгенерировать через `supabase gen types` (Supabase MCP)
 8. **lib/supabase/** — создать `client.ts` и `server.ts`
 
 **Проверка:**
+
 - `npm run dev` работает без ошибок
 - Supabase таблицы видны в Studio
 - Дизайн-токены применены (цвет фона, шрифт виден в браузере)
@@ -56,27 +59,29 @@
 1. **Роут** `app/(app)/dishes/page.tsx` — список всех блюд
 2. **Компонент** `DishCard` — название, тип, КБЖУ на порцию (рассчитывается из ингредиентов)
 3. **Форма добавления блюда** — React Hook Form + Zod:
-   - Название, описание, тип (`main` / `side` / `dessert`)
-   - Список ингредиентов с граммовкой (динамические поля)
+  - Название, описание, тип (`main` / `side` / `dessert`)
+  - Список ингредиентов с граммовкой (динамические поля)
 4. **Голосовой ввод** — кнопка записи голоса → `MediaRecorder API` → blob → отправка в API route
 5. **API route** `app/api/voice-parse/route.ts`:
-   - Принимает аудио blob
-   - Отправляет в Claude claude-haiku-4-5 (через Anthropic SDK)
-   - Промпт: распарсить блюдо, вернуть JSON `{name, ingredients: [{name, amount_g}]}`
-   - Для неизвестных ингредиентов — второй Claude-запрос: получить КБЖУ на 100г
-   - Сохранить новые ингредиенты в `ingredients`
+  - Принимает аудио blob
+  - Отправляет в Claude claude-haiku-4-5 (через Anthropic SDK)
+  - Промпт: распарсить блюдо, вернуть JSON `{name, ingredients: [{name, amount_g}]}`
+  - Для неизвестных ингредиентов — второй Claude-запрос: получить КБЖУ на 100г
+  - Сохранить новые ингредиенты в `ingredients`
 6. **Расчёт КБЖУ** — хелпер `lib/calc-kbju.ts`:
-   ```ts
+  ```ts
    function calcDishKBJU(dish_ingredients: DishIngredient[], ingredients: Ingredient[]): KBJU
-   ```
+  ```
 7. **Server Actions** — `createDish`, `updateDish`, `deleteDish`
 
 **Компоненты:**
+
 - `components/dishes/dish-card.tsx`
 - `components/dishes/dish-form.tsx`
 - `components/dishes/voice-input-button.tsx`
 
 **Проверка:**
+
 - Добавить блюдо руками через форму → КБЖУ рассчиталось
 - Нажать запись голоса → произнести блюдо → форма заполнилась автоматически
 - Новый ингредиент из голоса сохранён в `ingredients` с КБЖУ
@@ -94,6 +99,7 @@
 5. **Отображение** — сортировка: сначала заканчивающиеся (< 100г — красный), потом остальные
 
 **Проверка:**
+
 - Добавить ингредиент в холодильник → виден в списке
 - Уменьшить количество до 0 → подсвечено как пустое
 
@@ -108,11 +114,12 @@
 3. **Slot** — кнопка "Добавить блюдо" → модальный поиск/выбор из `dishes`
 4. **КБЖУ сводка по дню** — под каждым днём: суммарные ккал / белок / жир / углеводы
 5. **Алерт превышения калорий** — если ккал > лимит (задаётся в настройках, по умолчанию 2000):
-   - Визуальный индикатор (красный прогресс-бар или badge)
+  - Визуальный индикатор (красный прогресс-бар или badge)
 6. **Настройки** `app/(app)/settings/page.tsx` — поле "Дневной лимит ккал", "Целевой белок (г)"
 7. **Навигация по неделям** — кнопки "← предыдущая" / "следующая →"
 
 **Проверка:**
+
 - Добавить блюда на 3 дня → КБЖУ считается корректно
 - Превысить калории → алерт подсветился
 - Переключиться на следующую неделю → план сохранился
@@ -125,17 +132,18 @@
 
 1. **Роут** `app/(app)/shopping/page.tsx`
 2. **Генерация списка** — Server Action `generateShoppingList(weekStart: Date)`:
-   - Собрать все блюда из `meal_plan` на неделю
-   - Суммировать нужные ингредиенты
-   - Вычесть то, что есть в `pantry`
-   - Записать дефицит в `shopping_list`
+  - Собрать все блюда из `meal_plan` на неделю
+  - Суммировать нужные ингредиенты
+  - Вычесть то, что есть в `pantry`
+  - Записать дефицит в `shopping_list`
 3. **UI** — чекбокс-список: ингредиент + количество (г или кг)
-   - Группировка по категории (мясо, овощи, молочное и т.д.) — поле `category` в `ingredients`
+  - Группировка по категории (мясо, овощи, молочное и т.д.) — поле `category` в `ingredients`
 4. **Отметить купленным** — `markPurchased(id)` → обновляет `shopping_list.purchased = true` + прибавляет к `pantry`
 5. **Ручное добавление** — добавить позицию вне плана (например, кофе, специи)
 6. **Кнопка "Пересчитать список"** → пересчитывает с учётом текущего pantry
 
 **Проверка:**
+
 - Поставить блюда на неделю → список покупок сгенерировался автоматически
 - Отметить позицию купленной → она ушла из списка, pantry обновился
 - Удалить блюдо из плана → список пересчитался
@@ -149,15 +157,16 @@
 1. **Роут** `app/(app)/log/page.tsx` — лог по дням (date picker или недельный вид)
 2. **Дневная карточка** — план по КБЖУ vs факт, список блюд дня
 3. **"Съел вне плана"** — форма: ввести продукт / блюдо голосом или текстом
-   - Если продукт новый → Claude запрос → КБЖУ → сохранить в `ingredients`
-   - Добавить запись в `food_log`
+  - Если продукт новый → Claude запрос → КБЖУ → сохранить в `ingredients`
+  - Добавить запись в `food_log`
 4. **Аналитика** `app/(app)/analytics/page.tsx`:
-   - График ккал по дням (последние 30 дней)
-   - Среднее КБЖУ за неделю / месяц
-   - Топ-5 самых частых блюд
+  - График ккал по дням (последние 30 дней)
+  - Среднее КБЖУ за неделю / месяц
+  - Топ-5 самых частых блюд
 5. **Закрытие дня** — кнопка "Подтвердить день" → фиксирует plan → log
 
 **Проверка:**
+
 - Отметить день как завершённый → данные зафиксированы в `food_log`
 - Добавить внеплановый продукт голосом → КБЖУ добавилось к дню
 - Аналитика показывает корректные данные за последние дни
@@ -167,13 +176,14 @@
 ### Шаг 7 — Навигация и полировка UI
 
 1. **Layout** `app/(app)/layout.tsx` — bottom nav (mobile-first):
-   - Планировщик / Блюда / Холодильник / Покупки / Аналитика
+  - Планировщик / Блюда / Холодильник / Покупки / Аналитика
 2. **Главный экран** `app/page.tsx` → redirect на `/planner`
 3. **Mobile-first** — все экраны работают на телефоне (стоя на кухне)
 4. **Skeleton loaders** — для всех data-fetching компонентов
 5. **Toast уведомления** — shadcn/ui Sonner
 
 **Проверка:**
+
 - Навигация работает на мобильном
 - Все экраны имеют skeleton и error state
 
@@ -181,15 +191,17 @@
 
 ## Архитектурные решения
 
-| Аспект | Решение |
-|--------|---------|
-| Auth | Нет — single-user |
-| AI | Claude claude-haiku-4-5 — голос + КБЖУ новых продуктов |
-| Голос → текст | Browser `MediaRecorder` → API route → Claude |
-| КБЖУ расчёт | Локально из БД (`lib/calc-kbju.ts`), AI только для новых |
-| State | TanStack Query для server data, Zustand для UI state |
-| Routing | `/planner`, `/dishes`, `/pantry`, `/shopping`, `/log`, `/analytics`, `/settings` |
-| Design | Untitled UI (Figma) → токены в `globals.css` через `@theme` |
+
+| Аспект        | Решение                                                                          |
+| ------------- | -------------------------------------------------------------------------------- |
+| Auth          | Нет — single-user                                                                |
+| AI            | Claude claude-haiku-4-5 — голос + КБЖУ новых продуктов                           |
+| Голос → текст | Browser `MediaRecorder` → API route → Claude                                     |
+| КБЖУ расчёт   | Локально из БД (`lib/calc-kbju.ts`), AI только для новых                         |
+| State         | TanStack Query для server data, Zustand для UI state                             |
+| Routing       | `/planner`, `/dishes`, `/pantry`, `/shopping`, `/log`, `/analytics`, `/settings` |
+| Design        | Untitled UI (Figma) → токены в `globals.css` через `@theme`                      |
+
 
 ## Критические файлы
 
@@ -199,3 +211,4 @@
 - `src/app/api/voice-parse/route.ts` — голосовой ввод + Claude
 - `src/types/database.ts` — сгенерированные Supabase типы
 - `supabase/migrations/001_initial_schema.sql`
+
