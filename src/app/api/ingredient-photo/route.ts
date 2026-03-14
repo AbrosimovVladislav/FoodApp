@@ -4,29 +4,30 @@ import OpenAI from 'openai'
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function POST(req: NextRequest) {
-  const { images } = await req.json() as {
-    images: { base64: string; mimeType: string }[]
-  }
+  try {
+    const { images } = await req.json() as {
+      images: { base64: string; mimeType: string }[]
+    }
 
-  if (!images?.length) {
-    return NextResponse.json({ error: 'Нет изображений' }, { status: 400 })
-  }
+    if (!images?.length) {
+      return NextResponse.json({ error: 'Нет изображений' }, { status: 400 })
+    }
 
-  const imageBlocks = images.map((img) => ({
-    type: 'image_url' as const,
-    image_url: {
-      url: `data:${img.mimeType};base64,${img.base64}`,
-      detail: 'high' as const,
-    },
-  }))
+    const imageBlocks = images.map((img) => ({
+      type: 'image_url' as const,
+      image_url: {
+        url: `data:${img.mimeType};base64,${img.base64}`,
+        detail: 'high' as const,
+      },
+    }))
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4.1',
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: `Ты эксперт по нутрициологии и OCR.
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `Ты эксперт по нутрициологии и OCR.
 
 ЗАДАЧА: Определи продукт питания по фото.
 
@@ -47,25 +48,25 @@ export async function POST(req: NextRequest) {
   "unit": "г" или "мл"
 }
 Числа округляй до одного знака после запятой. Только JSON, без пояснений.`,
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: 'Определи продукт и его КБЖУ на 100г. Если видишь этикетку — читай числа с неё точно.',
-          },
-          ...imageBlocks,
-        ],
-      },
-    ],
-    max_tokens: 300,
-    temperature: 0,
-  })
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Определи продукт и его КБЖУ на 100г. Если видишь этикетку — читай числа с неё точно.',
+            },
+            ...imageBlocks,
+          ],
+        },
+      ],
+      max_tokens: 300,
+      temperature: 0,
+    })
 
-  const raw = completion.choices[0]?.message?.content ?? '{}'
+    const raw = completion.choices[0]?.message?.content ?? ''
+    console.log('[ingredient-photo] raw response:', raw)
 
-  try {
     const data = JSON.parse(raw) as {
       name: string
       calories: number
@@ -76,7 +77,9 @@ export async function POST(req: NextRequest) {
       unit: string
     }
     return NextResponse.json(data)
-  } catch {
-    return NextResponse.json({ error: 'Не удалось распарсить ответ AI' }, { status: 500 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Неизвестная ошибка'
+    console.error('[ingredient-photo] error:', message)
+    return NextResponse.json({ error: `Ошибка AI: ${message}` }, { status: 500 })
   }
 }

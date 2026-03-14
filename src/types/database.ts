@@ -156,21 +156,30 @@ export type Database = {
       }
       meal_plan: {
         Row: {
+          amount_g: number | null
+          created_at: string | null
           date: string
-          dish_id: string
+          dish_id: string | null
           id: string
+          ingredient_id: string | null
           slot: string
         }
         Insert: {
+          amount_g?: number | null
+          created_at?: string | null
           date: string
-          dish_id: string
+          dish_id?: string | null
           id?: string
-          slot: string
+          ingredient_id?: string | null
+          slot?: string
         }
         Update: {
+          amount_g?: number | null
+          created_at?: string | null
           date?: string
-          dish_id?: string
+          dish_id?: string | null
           id?: string
+          ingredient_id?: string | null
           slot?: string
         }
         Relationships: [
@@ -179,6 +188,13 @@ export type Database = {
             columns: ["dish_id"]
             isOneToOne: false
             referencedRelation: "dishes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
             referencedColumns: ["id"]
           },
         ]

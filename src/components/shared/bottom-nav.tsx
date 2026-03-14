@@ -2,15 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MessageCircle, UtensilsCrossed, Refrigerator, Carrot, BarChart2 } from 'lucide-react'
+import { MessageCircle, CalendarDays, UtensilsCrossed, Refrigerator, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { href: '/chat', label: 'Чат', icon: MessageCircle },
-  { href: '/dishes', label: 'Блюда', icon: UtensilsCrossed },
-  { href: '/ingredients', label: 'Ингредиенты', icon: Carrot },
-  { href: '/pantry', label: 'Запасы', icon: Refrigerator },
-  { href: '/analytics', label: 'Аналитика', icon: BarChart2 },
+  { href: '/chat', label: 'Чат', icon: MessageCircle, also: [] },
+  { href: '/planner', label: 'План', icon: CalendarDays, also: [] },
+  { href: '/dishes', label: 'Блюда', icon: UtensilsCrossed, also: ['/ingredients'] },
+  { href: '/pantry', label: 'Запасы', icon: Refrigerator, also: [] },
+  { href: '/settings', label: 'Настройки', icon: Settings, also: [] },
 ]
 
 export function BottomNav() {
@@ -19,8 +19,11 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border">
       <div className="mx-auto max-w-md flex">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + '/')
+        {NAV_ITEMS.map(({ href, label, icon: Icon, also }) => {
+          const active =
+            pathname === href ||
+            pathname.startsWith(href + '/') ||
+            also.some((p) => pathname === p || pathname.startsWith(p + '/'))
           return (
             <Link
               key={href}

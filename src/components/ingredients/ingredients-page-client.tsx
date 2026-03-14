@@ -12,9 +12,10 @@ import type { Ingredient } from '@/types/database'
 
 interface IngredientsPageClientProps {
   ingredients: Ingredient[]
+  embedded?: boolean
 }
 
-export function IngredientsPageClient({ ingredients }: IngredientsPageClientProps) {
+export function IngredientsPageClient({ ingredients, embedded }: IngredientsPageClientProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null)
   const [search, setSearch] = useState('')
@@ -51,8 +52,8 @@ export function IngredientsPageClient({ ingredients }: IngredientsPageClientProp
 
       <div className="flex flex-col flex-1">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-6 pb-4">
-          <h1 className="text-2xl">Ингредиенты</h1>
+        <div className={embedded ? 'flex items-center justify-end pb-3 pt-0' : 'flex items-center justify-between px-4 pt-6 pb-4'}>
+          {!embedded && <h1 className="text-2xl">Продукты</h1>}
           <Button size="sm" onClick={openAdd} className="h-10 gap-1.5">
             <Plus className="w-4 h-4" />
             Добавить
@@ -60,7 +61,7 @@ export function IngredientsPageClient({ ingredients }: IngredientsPageClientProp
         </div>
 
         {/* Search */}
-        <div className="px-4 pb-4">
+        <div className={embedded ? 'pb-4' : 'px-4 pb-4'}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -73,7 +74,7 @@ export function IngredientsPageClient({ ingredients }: IngredientsPageClientProp
         </div>
 
         {/* List */}
-        <div className="flex-1 px-4 pb-6">
+        <div className={embedded ? 'flex-1 pb-6' : 'flex-1 px-4 pb-6'}>
           {filtered.length === 0 ? (
             <p className="text-center text-muted-foreground py-16 text-sm">
               {search ? 'Ничего не найдено' : 'Нет ингредиентов'}

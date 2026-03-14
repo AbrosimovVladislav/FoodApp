@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { Plus, UtensilsCrossed } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { DishCard, type DishWithIngredients } from '@/components/dishes/dish-card'
 import { DishForm } from '@/components/dishes/dish-form'
+import { IngredientsPageClient } from '@/components/ingredients/ingredients-page-client'
 import type { Ingredient } from '@/types/database'
 
 interface DishesPageClientProps {
@@ -38,30 +40,40 @@ export function DishesPageClient({ dishes, ingredients }: DishesPageClientProps)
       <Toaster position="top-center" />
 
       <div className="flex flex-col flex-1">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-6 pb-4">
-          <h1 className="text-2xl">Блюда</h1>
-          <Button size="sm" onClick={openAdd} className="h-10 gap-1.5">
-            <Plus className="w-4 h-4" />
-            Добавить
-          </Button>
-        </div>
+        <div className="px-4 pt-6 pb-2">
+          <h1 className="text-2xl mb-4">Блюда</h1>
+          <Tabs defaultValue="dishes">
+            <TabsList className="w-full">
+              <TabsTrigger value="dishes" className="flex-1">Блюда</TabsTrigger>
+              <TabsTrigger value="ingredients" className="flex-1">Продукты</TabsTrigger>
+            </TabsList>
 
-        {/* List */}
-        <div className="flex-1 px-4 pb-6">
-          {dishes.length === 0 ? (
-            <EmptyState onAdd={openAdd} />
-          ) : (
-            <div className="flex flex-col gap-3">
-              {dishes.map((dish) => (
-                <DishCard key={dish.id} dish={dish} onEdit={openEdit} />
-              ))}
-            </div>
-          )}
+            <TabsContent value="dishes" className="mt-4">
+              <div className="flex justify-end mb-3">
+                <Button size="sm" onClick={openAdd} className="h-10 gap-1.5">
+                  <Plus className="w-4 h-4" />
+                  Добавить
+                </Button>
+              </div>
+              {dishes.length === 0 ? (
+                <EmptyState onAdd={openAdd} />
+              ) : (
+                <div className="flex flex-col gap-3 pb-6">
+                  {dishes.map((dish) => (
+                    <DishCard key={dish.id} dish={dish} onEdit={openEdit} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="ingredients" className="mt-0">
+              <IngredientsPageClient ingredients={ingredients} embedded />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
-      {/* Add / Edit Sheet */}
+      {/* Dish Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto rounded-t-2xl px-4 pb-8">
           <SheetHeader className="mb-6">
@@ -86,9 +98,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </div>
       <div className="flex flex-col gap-1">
         <p className="font-medium text-foreground">Блюд пока нет</p>
-        <p className="text-sm text-muted-foreground">
-          Добавьте первое блюдо вручную или через голос
-        </p>
+        <p className="text-sm text-muted-foreground">Добавьте первое блюдо вручную или через голос</p>
       </div>
       <Button onClick={onAdd} className="h-11 px-6">
         <Plus className="w-4 h-4 mr-2" />
