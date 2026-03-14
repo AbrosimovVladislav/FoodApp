@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MessageCircle, CalendarDays, UtensilsCrossed, Refrigerator, Settings } from 'lucide-react'
+import { MessageCircle, CalendarDays, UtensilsCrossed, Refrigerator, UserCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: '/planner', label: 'План', icon: CalendarDays, also: [] },
   { href: '/pantry', label: 'Запасы', icon: Refrigerator, also: ['/shopping'] },
   { href: '/dishes', label: 'Блюда', icon: UtensilsCrossed, also: ['/ingredients'] },
-  { href: '/settings', label: 'Настройки', icon: Settings, also: [] },
+  { href: '/cabinet', label: 'Кабинет', icon: UserCircle2, also: ['/settings', '/log'] },
 ]
 
 export function BottomNav() {

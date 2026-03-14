@@ -11,6 +11,7 @@ export async function updateSettings(data: {
   const { error } = await supabase.from('settings').update(data).eq('id', 1)
   if (error) return { success: false, error: error.message }
   revalidatePath('/settings')
+  revalidatePath('/cabinet')
   revalidatePath('/planner')
   return { success: true }
 }

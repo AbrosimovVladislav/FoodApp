@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/shared/page-header'
 import {
@@ -71,6 +72,12 @@ export function PantryClient({
   const [buyAmount, setBuyAmount] = useState('')
   const [buyingSaving, setBuyingSaving] = useState(false)
 
+  // Manual buy sheet (shopping tab — add any ingredient)
+  const [shopManualOpen, setShopManualOpen] = useState(false)
+  const [shopManualIngredientId, setShopManualIngredientId] = useState('')
+  const [shopManualAmount, setShopManualAmount] = useState('100')
+  const [shopManualSaving, setShopManualSaving] = useState(false)
+
   const pantryIngredientIds = new Set(pantry.map((p) => p.ingredient_id))
   const availableIngredients = allIngredients.filter((i) => !pantryIngredientIds.has(i.id))
 
@@ -123,6 +130,25 @@ export function PantryClient({
       toast.error(result.error ?? 'Ошибка')
     } else {
       setEditItem(null)
+    }
+  }
+
+  // Manual buy action (shopping tab)
+  async function handleShopManualBuy() {
+    if (!shopManualIngredientId) return
+    const amount = Number(shopManualAmount)
+    if (!amount || amount <= 0) return
+    setShopManualSaving(true)
+    const result = await buyIngredient(shopManualIngredientId, amount)
+    setShopManualSaving(false)
+    if (!result.success) {
+      toast.error(result.error ?? 'Ошибка')
+    } else {
+      const ing = allIngredients.find((i) => i.id === shopManualIngredientId)
+      toast.success(`${ing?.name ?? 'Продукт'}: +${formatAmount(amount)} в холодильник`)
+      setShopManualOpen(false)
+      setShopManualIngredientId('')
+      setShopManualAmount('100')
     }
   }
 
@@ -288,7 +314,8 @@ export function PantryClient({
         <PageHeader title="Запасы" />
 
         <Tabs defaultValue={defaultTab} className="flex flex-col flex-1">
-          <TabsList className="mb-4 w-full">
+          <div className="px-4 mb-4">
+            <TabsList className="w-full">
             <TabsTrigger value="pantry" className="flex-1 gap-1.5">
               <Refrigerator className="w-4 h-4" />
               Холодильник
@@ -303,6 +330,7 @@ export function PantryClient({
               )}
             </TabsTrigger>
           </TabsList>
+          </div>
 
           {/* Pantry tab */}
           <TabsContent value="pantry" className="flex-1 px-4 pb-6">
@@ -386,7 +414,7 @@ export function PantryClient({
 
           {/* Shopping tab — live deficit list */}
           <TabsContent value="shopping" className="flex-1 flex flex-col px-4 pb-6">
-            {/* Voice button */}
+            {/* Voice + Add buttons */}
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={shopVoiceState === 'recording' ? stopShopVoiceRecording : startShopVoiceRecording}
@@ -413,6 +441,15 @@ export function PantryClient({
                   ? 'Стоп'
                   : 'Голос — что купил'}
               </button>
+
+              <Button size="sm" className="h-10 gap-1.5" onClick={() => {
+                setShopManualOpen(true)
+                setShopManualIngredientId('')
+                setShopManualAmount('100')
+              }}>
+                <Plus className="w-4 h-4" />
+                Добавить
+              </Button>
             </div>
             {shopVoiceState === 'recording' && (
               <p className="text-xs text-destructive text-center mb-3 animate-pulse">
@@ -478,12 +515,12 @@ export function PantryClient({
         </SheetContent>
       </Sheet>
 
-      {/* Edit amount sheet */}
-      <Sheet open={!!editItem} onOpenChange={(open) => { if (!open) setEditItem(null) }}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8">
-          <SheetHeader className="mb-5">
-            <SheetTitle>{editItem?.ingredients.name}</SheetTitle>
-          </SheetHeader>
+      {/* Edit amount dialog (centered) */}
+      <Dialog open={!!editItem} onOpenChange={(open) => { if (!open) setEditItem(null) }}>
+        <DialogContent showCloseButton={false} className="px-5 py-5">
+          <DialogHeader className="mb-4">
+            <DialogTitle>{editItem?.ingredients.name}</DialogTitle>
+          </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label>Количество (г)</Label>
@@ -494,7 +531,6 @@ export function PantryClient({
                 onChange={(e) => setEditAmount(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleEditSave() }}
                 className="h-14 text-xl text-center"
-                autoFocus
               />
             </div>
             <div className="grid grid-cols-4 gap-2">
@@ -528,6 +564,44 @@ export function PantryClient({
                 {editSaving ? 'Сохранение...' : 'Сохранить'}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual buy sheet (shopping tab) */}
+      <Sheet open={shopManualOpen} onOpenChange={(open) => { if (!open) setShopManualOpen(false) }}>
+        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8">
+          <SheetHeader className="mb-6">
+            <SheetTitle>Добавить в холодильник</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Ингредиент</Label>
+              <select
+                value={shopManualIngredientId}
+                onChange={(e) => setShopManualIngredientId(e.target.value)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Выберите ингредиент</option>
+                {allIngredients.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Количество (г)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={shopManualAmount}
+                onChange={(e) => setShopManualAmount(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleShopManualBuy}
+              disabled={!shopManualIngredientId || shopManualSaving}
+              className="h-12 mt-1"
+            >
+              {shopManualSaving ? 'Сохранение...' : 'В холодильник'}
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
