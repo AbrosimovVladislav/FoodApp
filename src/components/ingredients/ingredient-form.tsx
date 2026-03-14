@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,11 +24,14 @@ interface IngredientFormProps {
 
 export function IngredientForm({ editingIngredient, onSuccess }: IngredientFormProps) {
   const isEditing = !!editingIngredient
+  const [isLookingUp, setIsLookingUp] = useState(false)
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<IngredientFormValues>({
     resolver: zodResolver(ingredientSchema),
@@ -67,6 +70,49 @@ export function IngredientForm({ editingIngredient, onSuccess }: IngredientFormP
     }
   }, [editingIngredient, reset])
 
+  const nameValue = watch('name')
+
+  async function fillWithAI() {
+    const name = nameValue?.trim()
+    if (!name) return
+
+    setIsLookingUp(true)
+    try {
+      const res = await fetch('/api/ingredient-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      const data = await res.json() as {
+        calories?: number
+        protein?: number
+        fat?: number
+        carbs?: number
+        category?: string
+        unit?: string
+        error?: string
+      }
+
+      if (!res.ok || data.error) {
+        toast.error(data.error ?? 'Не удалось получить данные')
+        return
+      }
+
+      if (data.calories !== undefined) setValue('calories_per_100g', data.calories)
+      if (data.protein !== undefined) setValue('protein_per_100g', data.protein)
+      if (data.fat !== undefined) setValue('fat_per_100g', data.fat)
+      if (data.carbs !== undefined) setValue('carbs_per_100g', data.carbs)
+      if (data.category) setValue('category', data.category as IngredientFormValues['category'])
+      if (data.unit) setValue('unit', data.unit)
+
+      toast.success('КБЖУ заполнено')
+    } catch {
+      toast.error('Ошибка запроса')
+    } finally {
+      setIsLookingUp(false)
+    }
+  }
+
   async function onSubmit(values: IngredientFormValues) {
     const result = isEditing
       ? await updateIngredient(editingIngredient!.id, values)
@@ -85,7 +131,24 @@ export function IngredientForm({ editingIngredient, onSuccess }: IngredientFormP
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="name">Название</Label>
-        <Input id="name" placeholder="Гречка" {...register('name')} />
+        <div className="flex gap-2">
+          <Input id="name" placeholder="Гречка" {...register('name')} />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            disabled={!nameValue?.trim() || isLookingUp}
+            onClick={fillWithAI}
+            title="Заполнить КБЖУ через AI"
+          >
+            {isLookingUp ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
         {errors.name && <span className="text-xs text-destructive">{errors.name.message}</span>}
       </div>
 
