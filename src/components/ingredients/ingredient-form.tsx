@@ -80,7 +80,7 @@ export function IngredientForm({ editingIngredient, onSuccess }: IngredientFormP
       const url = URL.createObjectURL(file)
       img.onload = () => {
         URL.revokeObjectURL(url)
-        const maxSize = 1024
+        const maxSize = 2048
         let { width, height } = img
         if (width > maxSize || height > maxSize) {
           if (width > height) {
