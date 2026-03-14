@@ -6,6 +6,9 @@ import type { IngredientFormValues } from '@/lib/validations/ingredient'
 
 export async function createIngredient(values: IngredientFormValues) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
   const { error } = await supabase.from('ingredients').insert({
     name: values.name,
     category: values.category,
@@ -14,6 +17,7 @@ export async function createIngredient(values: IngredientFormValues) {
     fat_per_100g: values.fat_per_100g,
     carbs_per_100g: values.carbs_per_100g,
     unit: values.unit || 'г',
+    user_id: user.id,
   })
   if (error) return { success: false, error: error.message }
   revalidatePath('/ingredients')

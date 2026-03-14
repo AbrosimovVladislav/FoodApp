@@ -1,13 +1,18 @@
 'use client'
 
 import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import { updateSettings } from '@/app/(app)/settings/actions'
+import { createClient } from '@/lib/supabase/client'
 import type { Settings } from '@/types/database'
 
 const schema = z.object({
@@ -17,7 +22,10 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-export function SettingsForm({ settings }: { settings: Settings }) {
+export function SettingsForm({ settings, userEmail }: { settings: Settings; userEmail: string | null }) {
+  const router = useRouter()
+  const [signingOut, setSigningOut] = useState(false)
+
   const {
     register,
     handleSubmit,
@@ -37,6 +45,13 @@ export function SettingsForm({ settings }: { settings: Settings }) {
     } else {
       toast.success('Настройки сохранены')
     }
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
   return (
@@ -75,6 +90,26 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       <Button type="submit" className="h-12" disabled={isSubmitting}>
         {isSubmitting ? 'Сохраняем...' : 'Сохранить'}
       </Button>
+
+      <Separator className="my-2" />
+
+      {/* Account section */}
+      <div className="flex flex-col gap-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Аккаунт</p>
+        {userEmail && (
+          <p className="text-sm text-muted-foreground">{userEmail}</p>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 gap-2 text-destructive border-destructive/30 hover:bg-destructive/5"
+          onClick={handleSignOut}
+          disabled={signingOut}
+        >
+          <LogOut className="w-4 h-4" />
+          {signingOut ? 'Выходим...' : 'Выйти'}
+        </Button>
+      </div>
     </form>
   )
 }

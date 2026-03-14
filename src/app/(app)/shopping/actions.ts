@@ -21,6 +21,8 @@ function toDateStr(d: Date): string {
 
 export async function generateShoppingList(weekStartStr: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
 
   const weekStart = new Date(weekStartStr + 'T00:00:00')
   const weekEnd = new Date(weekStart)
@@ -108,6 +110,7 @@ export async function generateShoppingList(weekStartStr: string) {
         amount_g: d.amount_g,
         week_start_date: weekStartStr,
         purchased: false,
+        user_id: user.id,
       }))
     )
     if (insError) return { success: false, error: insError.message }
@@ -119,6 +122,8 @@ export async function generateShoppingList(weekStartStr: string) {
 
 export async function markPurchased(id: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
 
   // Get the item first
   const { data: item, error: getError } = await supabase
@@ -152,7 +157,7 @@ export async function markPurchased(id: string) {
   } else {
     await supabase
       .from('pantry')
-      .insert({ ingredient_id: item.ingredient_id, amount_g: item.amount_g })
+      .insert({ ingredient_id: item.ingredient_id, amount_g: item.amount_g, user_id: user.id })
   }
 
   revalidatePath('/shopping')
@@ -205,11 +210,15 @@ export async function addManualShoppingItem(
   weekStartStr: string
 ) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
   const { error } = await supabase.from('shopping_list').insert({
     ingredient_id: ingredientId,
     amount_g: amountG,
     week_start_date: weekStartStr,
     purchased: false,
+    user_id: user.id,
   })
   if (error) return { success: false, error: error.message }
   revalidatePath('/shopping')
@@ -221,6 +230,9 @@ export async function markPurchasedByIngredientIds(
   weekStartStr: string
 ) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
   const results: string[] = []
 
   for (const item of items) {
@@ -255,7 +267,7 @@ export async function markPurchasedByIngredientIds(
     } else {
       await supabase
         .from('pantry')
-        .insert({ ingredient_id: item.ingredient_id, amount_g: amountToAdd })
+        .insert({ ingredient_id: item.ingredient_id, amount_g: amountToAdd, user_id: user.id })
     }
 
     results.push(item.ingredient_id)
@@ -273,4 +285,3 @@ export async function removeShoppingItem(id: string) {
   revalidatePath('/shopping')
   return { success: true }
 }
-

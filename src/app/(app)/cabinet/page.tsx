@@ -34,8 +34,8 @@ export default async function CabinetPage() {
   const fromDate = toDateStr(thirtyDaysAgo)
   const toDate = toDateStr(today)
 
-  const [settingsResult, mealPlanResult, dishesResult, ingredientsResult] = await Promise.all([
-    supabase.from('settings').select('*').eq('id', 1).single(),
+  const [settingsResult, mealPlanResult, dishesResult, ingredientsResult, { data: { user } }] = await Promise.all([
+    supabase.from('settings').select('*').maybeSingle(),
     supabase
       .from('meal_plan')
       .select('*')
@@ -47,13 +47,14 @@ export default async function CabinetPage() {
       .select('*, dish_ingredients(*, ingredients(*))')
       .order('name', { ascending: true }),
     supabase.from('ingredients').select('*').order('name', { ascending: true }),
+    supabase.auth.getUser(),
   ])
 
   if (settingsResult.error) throw new Error(settingsResult.error.message)
   if (dishesResult.error) throw new Error(dishesResult.error.message)
   if (ingredientsResult.error) throw new Error(ingredientsResult.error.message)
 
-  const settings = settingsResult.data as Settings
+  const settings = (settingsResult.data ?? { daily_calorie_limit: 2000, daily_protein_goal: 120 }) as Settings
   const mealPlan = (mealPlanResult.data ?? []) as MealPlan[]
   const dishes = dishesResult.data as DishWithIngredients[]
   const ingredients = ingredientsResult.data as Ingredient[]
@@ -116,6 +117,10 @@ export default async function CabinetPage() {
       count,
     }))
 
+  const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email ?? null
+  const userEmail = user?.email ?? null
+  const userAvatarUrl = user?.user_metadata?.avatar_url ?? null
+
   return (
     <CabinetClient
       settings={settings}
@@ -123,6 +128,9 @@ export default async function CabinetPage() {
       weeklyAvg={weeklyAvg}
       topDishes={topDishes}
       calorieLimit={settings.daily_calorie_limit}
+      userName={userName}
+      userEmail={userEmail}
+      userAvatarUrl={userAvatarUrl}
     />
   )
 }

@@ -5,9 +5,12 @@ import { revalidatePath } from 'next/cache'
 
 export async function addPantryItem(ingredient_id: string, amount_g: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
   const { error } = await supabase
     .from('pantry')
-    .upsert({ ingredient_id, amount_g }, { onConflict: 'ingredient_id' })
+    .upsert({ ingredient_id, amount_g, user_id: user.id }, { onConflict: 'ingredient_id,user_id' })
   if (error) return { success: false, error: error.message }
   revalidatePath('/pantry')
   return { success: true }
@@ -31,12 +34,15 @@ export async function updatePantryAmount(id: string, amount_g: number) {
 
 export async function setPantryAmount(ingredient_id: string, amount_g: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
   if (amount_g <= 0) {
     await supabase.from('pantry').delete().eq('ingredient_id', ingredient_id)
   } else {
     await supabase
       .from('pantry')
-      .upsert({ ingredient_id, amount_g }, { onConflict: 'ingredient_id' })
+      .upsert({ ingredient_id, amount_g, user_id: user.id }, { onConflict: 'ingredient_id,user_id' })
   }
   revalidatePath('/pantry')
   return { success: true }
@@ -46,6 +52,8 @@ export async function bulkUpdatePantry(
   updates: { ingredient_id: string; action: 'set' | 'add'; amount_g: number }[]
 ) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
 
   const { data: current } = await supabase
     .from('pantry')
@@ -67,7 +75,10 @@ export async function bulkUpdatePantry(
     } else {
       await supabase
         .from('pantry')
-        .upsert({ ingredient_id: update.ingredient_id, amount_g: newAmount }, { onConflict: 'ingredient_id' })
+        .upsert(
+          { ingredient_id: update.ingredient_id, amount_g: newAmount, user_id: user.id },
+          { onConflict: 'ingredient_id,user_id' }
+        )
     }
   }
 
@@ -77,6 +88,9 @@ export async function bulkUpdatePantry(
 
 export async function buyIngredient(ingredient_id: string, amount_g: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
   const { data: existing } = await supabase
     .from('pantry')
     .select('id, amount_g')
@@ -89,7 +103,7 @@ export async function buyIngredient(ingredient_id: string, amount_g: number) {
       .eq('id', existing.id)
     if (error) return { success: false, error: error.message }
   } else {
-    const { error } = await supabase.from('pantry').insert({ ingredient_id, amount_g })
+    const { error } = await supabase.from('pantry').insert({ ingredient_id, amount_g, user_id: user.id })
     if (error) return { success: false, error: error.message }
   }
   revalidatePath('/pantry')

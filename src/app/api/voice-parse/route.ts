@@ -77,6 +77,11 @@ export async function POST(req: NextRequest) {
     // 3. Match ingredients to DB, find unknowns
     const supabase = await createClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { data: existingIngredients } = await supabase
       .from('ingredients')
       .select('id, name')
@@ -143,6 +148,7 @@ export async function POST(req: NextRequest) {
             carbs_per_100g: item.carbs_per_100g,
             category: item.category ?? 'прочее',
             unit: 'г',
+            user_id: user.id,
           })
           .select('id, name')
           .single()

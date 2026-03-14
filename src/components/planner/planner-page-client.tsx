@@ -102,6 +102,7 @@ interface PlannerPageClientProps {
   ingredients: Ingredient[]
   settings: Settings
   weekStartStr: string
+  userName: string | null
 }
 
 export function PlannerPageClient({
@@ -110,6 +111,7 @@ export function PlannerPageClient({
   ingredients,
   settings,
   weekStartStr,
+  userName,
 }: PlannerPageClientProps) {
   const router = useRouter()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -301,7 +303,12 @@ export function PlannerPageClient({
         {/* Header */}
         <div className="px-4 pt-5 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-2xl">Планировщик</h1>
+            <div>
+              <h1 className="text-2xl">Планировщик</h1>
+              {userName && (
+                <p className="text-xs text-muted-foreground mt-0.5">Привет, {userName}!</p>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {!isCurrentWeek && (
                 <button

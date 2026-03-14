@@ -8,7 +8,16 @@ export async function updateSettings(data: {
   daily_protein_goal: number
 }) {
   const supabase = await createClient()
-  const { error } = await supabase.from('settings').update(data).eq('id', 1)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  const { error } = await supabase
+    .from('settings')
+    .upsert(
+      { user_id: user.id, ...data, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    )
+
   if (error) return { success: false, error: error.message }
   revalidatePath('/settings')
   revalidatePath('/cabinet')

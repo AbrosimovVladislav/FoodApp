@@ -16,9 +16,10 @@ interface ChatClientProps {
   todayEntries: TodayMealEntry[]
   todayCalories: number
   dailyLimit: number
+  userName: string | null
 }
 
-export function ChatClient({ todayEntries, todayCalories, dailyLimit }: ChatClientProps) {
+export function ChatClient({ todayEntries, todayCalories, dailyLimit, userName }: ChatClientProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -88,6 +89,7 @@ export function ChatClient({ todayEntries, todayCalories, dailyLimit }: ChatClie
             entries={todayEntries}
             todayCalories={todayCalories}
             dailyLimit={dailyLimit}
+            userName={userName}
           />
         ) : (
           messages.map((msg, i) => <MessageBubble key={i} message={msg} />)
@@ -151,10 +153,12 @@ function TodayPlan({
   entries,
   todayCalories,
   dailyLimit,
+  userName,
 }: {
   entries: TodayMealEntry[]
   todayCalories: number
   dailyLimit: number
+  userName: string | null
 }) {
   const eatenCalories = entries.filter((e) => e.eaten).reduce((s, e) => s + e.calories, 0)
   const caloriePercent = Math.min(100, (eatenCalories / dailyLimit) * 100)
@@ -167,7 +171,9 @@ function TodayPlan({
           <Bot className="w-5 h-5 text-primary-foreground" />
         </div>
         <div>
-          <p className="font-display font-semibold text-foreground leading-tight">Помощник по питанию</p>
+          <p className="font-display font-semibold text-foreground leading-tight">
+            {userName ? `Привет, ${userName}!` : 'Помощник по питанию'}
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Знаю твой холодильник и базу блюд
           </p>

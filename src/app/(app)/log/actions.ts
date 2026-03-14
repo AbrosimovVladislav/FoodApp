@@ -13,6 +13,8 @@ export async function closeDayLog(
   ingredients: Ingredient[]
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
 
   // Remove existing food_log entries for this date (re-close)
   await supabase.from('food_log').delete().eq('date', date).not('dish_id', 'is', null)
@@ -31,6 +33,7 @@ export async function closeDayLog(
         total_protein: kbju.protein,
         total_fat: kbju.fat,
         total_carbs: kbju.carbs,
+        user_id: user.id,
       }
     })
 
@@ -53,6 +56,8 @@ export async function addExtraLog(data: {
   carbs: number
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
 
   const { error } = await supabase.from('food_log').insert({
     date: data.date,
@@ -62,6 +67,7 @@ export async function addExtraLog(data: {
     total_protein: Math.round(data.protein * 10) / 10,
     total_fat: Math.round(data.fat * 10) / 10,
     total_carbs: Math.round(data.carbs * 10) / 10,
+    user_id: user.id,
   })
 
   if (error) return { success: false, error: error.message }

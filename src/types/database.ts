@@ -57,6 +57,7 @@ export type Database = {
           id: string
           meal_type: string
           name: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -64,6 +65,7 @@ export type Database = {
           id?: string
           meal_type: string
           name: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           id?: string
           meal_type?: string
           name?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -85,6 +88,7 @@ export type Database = {
           total_carbs: number
           total_fat: number
           total_protein: number
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -96,6 +100,7 @@ export type Database = {
           total_carbs?: number
           total_fat?: number
           total_protein?: number
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -107,6 +112,7 @@ export type Database = {
           total_carbs?: number
           total_fat?: number
           total_protein?: number
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -129,6 +135,7 @@ export type Database = {
           name: string
           protein_per_100g: number
           unit: string
+          user_id: string | null
         }
         Insert: {
           calories_per_100g?: number
@@ -140,6 +147,7 @@ export type Database = {
           name: string
           protein_per_100g?: number
           unit?: string
+          user_id?: string | null
         }
         Update: {
           calories_per_100g?: number
@@ -151,6 +159,7 @@ export type Database = {
           name?: string
           protein_per_100g?: number
           unit?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -164,6 +173,7 @@ export type Database = {
           id: string
           ingredient_id: string | null
           slot: string
+          user_id: string | null
         }
         Insert: {
           amount_g?: number | null
@@ -173,7 +183,8 @@ export type Database = {
           eaten?: boolean
           id?: string
           ingredient_id?: string | null
-          slot?: string
+          slot: string
+          user_id?: string | null
         }
         Update: {
           amount_g?: number | null
@@ -184,6 +195,7 @@ export type Database = {
           id?: string
           ingredient_id?: string | null
           slot?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -208,24 +220,27 @@ export type Database = {
           id: string
           ingredient_id: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           amount_g?: number
           id?: string
           ingredient_id: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           amount_g?: number
           id?: string
           ingredient_id?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "pantry_ingredient_id_fkey"
             columns: ["ingredient_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "ingredients"
             referencedColumns: ["id"]
           },
@@ -237,18 +252,21 @@ export type Database = {
           daily_protein_goal: number
           id: number
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           daily_calorie_limit?: number
           daily_protein_goal?: number
           id?: number
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           daily_calorie_limit?: number
           daily_protein_goal?: number
           id?: number
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -259,6 +277,7 @@ export type Database = {
           id: string
           ingredient_id: string
           purchased: boolean
+          user_id: string | null
           week_start_date: string
         }
         Insert: {
@@ -267,6 +286,7 @@ export type Database = {
           id?: string
           ingredient_id: string
           purchased?: boolean
+          user_id?: string | null
           week_start_date: string
         }
         Update: {
@@ -275,6 +295,7 @@ export type Database = {
           id?: string
           ingredient_id?: string
           purchased?: boolean
+          user_id?: string | null
           week_start_date?: string
         }
         Relationships: [

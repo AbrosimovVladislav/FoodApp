@@ -10,12 +10,16 @@ export async function addMealPlanEntry(params: {
   amount_g: number
 }) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
   const { error } = await supabase.from('meal_plan').insert({
     date: params.date,
     dish_id: params.dishId ?? null,
     ingredient_id: params.ingredientId ?? null,
     amount_g: params.amount_g,
     slot: `meal_${Date.now()}`,
+    user_id: user.id,
   })
   if (error) return { success: false, error: error.message }
   revalidatePath('/planner')

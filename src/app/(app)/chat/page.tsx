@@ -24,11 +24,12 @@ export default async function ChatPage() {
   const supabase = await createClient()
   const today = toDateStr(new Date())
 
-  const [planResult, dishesResult, ingredientsResult, settingsResult] = await Promise.all([
+  const [planResult, dishesResult, ingredientsResult, settingsResult, { data: { user } }] = await Promise.all([
     supabase.from('meal_plan').select('*').eq('date', today).order('created_at', { ascending: true }),
     supabase.from('dishes').select('*, dish_ingredients(*, ingredients(*))'),
     supabase.from('ingredients').select('*'),
     supabase.from('settings').select('*').eq('id', 1).single(),
+    supabase.auth.getUser(),
   ])
 
   const dishes = (dishesResult.data ?? []) as DishWithIngredients[]
@@ -67,6 +68,7 @@ export default async function ChatPage() {
   })
 
   const todayCalories = todayEntries.reduce((s, e) => s + e.calories, 0)
+  const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -75,6 +77,7 @@ export default async function ChatPage() {
         todayEntries={todayEntries}
         todayCalories={todayCalories}
         dailyLimit={dailyLimit}
+        userName={userName}
       />
     </div>
   )

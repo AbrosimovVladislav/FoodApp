@@ -34,7 +34,7 @@ export default async function PlannerPage({
 
   const supabase = await createClient()
 
-  const [mealPlanResult, dishesResult, ingredientsResult, settingsResult] = await Promise.all([
+  const [mealPlanResult, dishesResult, ingredientsResult, settingsResult, { data: { user } }] = await Promise.all([
     supabase
       .from('meal_plan')
       .select('*')
@@ -46,7 +46,8 @@ export default async function PlannerPage({
       .select('*, dish_ingredients(*, ingredients(*))')
       .order('name', { ascending: true }),
     supabase.from('ingredients').select('*').order('name', { ascending: true }),
-    supabase.from('settings').select('*').eq('id', 1).single(),
+    supabase.from('settings').select('*').maybeSingle(),
+    supabase.auth.getUser(),
   ])
 
   if (mealPlanResult.error) throw new Error(mealPlanResult.error.message)
@@ -54,13 +55,17 @@ export default async function PlannerPage({
   if (ingredientsResult.error) throw new Error(ingredientsResult.error.message)
   if (settingsResult.error) throw new Error(settingsResult.error.message)
 
+  const settings = (settingsResult.data ?? { daily_calorie_limit: 2000, daily_protein_goal: 120 }) as Settings
+  const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email ?? null
+
   return (
     <PlannerPageClient
       mealPlan={mealPlanResult.data as MealPlan[]}
       dishes={dishesResult.data as DishWithIngredients[]}
       ingredients={ingredientsResult.data as Ingredient[]}
-      settings={settingsResult.data as Settings}
+      settings={settings}
       weekStartStr={weekStartStr}
+      userName={userName}
     />
   )
 }

@@ -111,47 +111,50 @@
 
 ---
 
-### Шаг 6 — Дневной лог и аналитика
+### Шаг 6 — Дневной лог и аналитика ✅ ВЫПОЛНЕН
 
-**Цель:** ретроспектива питания и дополнительные записи вне плана
-
-1. **Роут** `app/(app)/log/page.tsx` — лог по дням (date picker или недельный вид)
-2. **Дневная карточка** — план по КБЖУ vs факт, список блюд дня
-3. **"Съел вне плана"** — форма: ввести продукт / блюдо голосом или текстом
-  - Если продукт новый → OpenAI запрос → КБЖУ → сохранить в `ingredients`
-  - Добавить запись в `food_log`
-4. **Аналитика** `app/(app)/analytics/page.tsx`:
-  - График ккал по дням (последние 30 дней)
-  - Среднее КБЖУ за неделю / месяц
-  - Топ-5 самых частых блюд
-5. **Закрытие дня** — кнопка "Подтвердить день" → фиксирует plan → log
-
-**Проверка:**
-
-- Отметить день как завершённый → данные зафиксированы в `food_log`
-- Добавить внеплановый продукт голосом → КБЖУ добавилось к дню
-- Аналитика показывает корректные данные за последние дни
+- ✅ **Роут** `app/(app)/log/page.tsx` — лог по дням, навигация ← / → по датам, подсветка сегодня
+- ✅ **`LogClient`** — план по КБЖУ vs факт, прогресс-бар ккал с алертом превышения
+- ✅ **"Съел вне плана"** — Sheet: ввод названия → lookup в локальной БД / OpenAI → граммовка → `addExtraLog`
+- ✅ **Закрытие дня** — кнопка "Закрыть день" → `closeDayLog` фиксирует meal_plan → `food_log`
+- ✅ **Server Actions** — `closeDayLog`, `addExtraLog`, `removeExtraLog` в `log/actions.ts`
+- ✅ **Аналитика** `app/(app)/cabinet/page.tsx` (роут `/cabinet`):
+  - Bar chart ккал по дням (последние 14 дней) через `CabinetClient`
+  - Среднее КБЖУ за последние 7 дней с данными
+  - Топ-5 самых частых блюд (последние 30 дней)
 
 ---
 
-### Шаг 7 — Навигация и полировка UI 🔄 В ПРОЦЕССЕ
+### Шаг 7 — Навигация, полировка UI и авторизация ✅ ВЫПОЛНЕН
 
-1. **Layout** `app/(app)/layout.tsx` — bottom nav (mobile-first):
-  - ✅ Чат / План / Запасы / Блюда / Настройки
-  - ✅ **LiveClock** — дата и время в правом верхнем углу (все страницы)
-2. **Главный экран** `app/page.tsx` → redirect на `/planner`
-3. **Mobile-first** — все экраны работают на телефоне (стоя на кухне)
-4. **Skeleton loaders** — для всех data-fetching компонентов
-5. **Toast уведомления** — shadcn/ui Sonner (везде)
+**Auth (Google OAuth через Supabase):**
+- ✅ **`src/middleware.ts`** — обновляет сессию на каждый запрос, незалогиненных → `/login`
+- ✅ **`app/login/page.tsx`** + **`app/login/login-button.tsx`** — страница входа, кнопка Google OAuth
+- ✅ **`app/auth/callback/route.ts`** — обмен code → сессия, редирект на `/planner`
+- ✅ **`app/(app)/layout.tsx`** — double-check auth, redirect('/login') если нет пользователя
+- ✅ **Кнопка "Выйти"** в настройках + email пользователя (секция "Аккаунт")
 
-**Осталось:**
-- Skeleton loaders для страниц
-- Error states
+**Skeleton loaders (9 страниц):**
+- ✅ `app/(app)/planner/loading.tsx`
+- ✅ `app/(app)/dishes/loading.tsx`
+- ✅ `app/(app)/ingredients/loading.tsx`
+- ✅ `app/(app)/pantry/loading.tsx`
+- ✅ `app/(app)/shopping/loading.tsx`
+- ✅ `app/(app)/log/loading.tsx`
+- ✅ `app/(app)/cabinet/loading.tsx`
+- ✅ `app/(app)/chat/loading.tsx`
+- ✅ `app/(app)/settings/loading.tsx`
 
-**Проверка:**
+**Error boundary:**
+- ✅ **`app/(app)/error.tsx`** — AlertCircle + кнопка "Попробовать снова" (`reset()`), покрывает все (app) страницы
 
-- Навигация работает на мобильном
-- Все экраны имеют skeleton и error state
+**Мелкие правки:**
+- ✅ `app/page.tsx` → redirect на `/planner` (было `/chat`)
+- ✅ Bottom nav и LiveClock — уже были реализованы
+
+**Что нужно сделать вручную (Supabase Dashboard):**
+- Authentication → Providers → Google → включить, вставить Client ID + Secret
+- Authentication → URL Configuration → добавить `http://localhost:3000/auth/callback`
 
 ---
 

@@ -15,6 +15,9 @@ interface CabinetClientProps {
   weeklyAvg: { calories: number; protein: number; fat: number; carbs: number } | null
   topDishes: TopDish[]
   calorieLimit: number
+  userName: string | null
+  userEmail: string | null
+  userAvatarUrl: string | null
 }
 
 function BarChart({ days, limit }: { days: DayStats[]; limit: number }) {
@@ -94,6 +97,9 @@ export function CabinetClient({
   weeklyAvg,
   topDishes,
   calorieLimit,
+  userName,
+  userEmail,
+  userAvatarUrl,
 }: CabinetClientProps) {
   const todayStats = last14[last14.length - 1]
 
@@ -101,12 +107,27 @@ export function CabinetClient({
     <div className="flex flex-col flex-1 pb-6">
       {/* Header */}
       <div className="flex items-start justify-between px-4 pt-4 pb-2">
-        <h1 className="text-2xl font-display font-semibold">Кабинет</h1>
+        <div className="flex items-center gap-3">
+          {userAvatarUrl && (
+            <img
+              src={userAvatarUrl}
+              alt={userName ?? 'Avatar'}
+              referrerPolicy="no-referrer"
+              className="w-10 h-10 rounded-full object-cover shrink-0"
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-display font-semibold">Кабинет</h1>
+            {userName && (
+              <p className="text-sm text-muted-foreground mt-0.5">{userName}</p>
+            )}
+          </div>
+        </div>
         <LiveClock />
       </div>
 
       <Tabs defaultValue="stats" className="flex flex-col flex-1">
-        <TabsList className="mx-4 mb-1 grid grid-cols-2">
+        <TabsList className="mx-4 mb-1 w-full">
           <TabsTrigger value="stats">Статистика</TabsTrigger>
           <TabsTrigger value="settings">Настройки</TabsTrigger>
         </TabsList>
@@ -202,7 +223,7 @@ export function CabinetClient({
 
         {/* ───────── НАСТРОЙКИ ───────── */}
         <TabsContent value="settings" className="px-4 pt-2">
-          <SettingsForm settings={settings} />
+          <SettingsForm settings={settings} userEmail={userEmail} />
         </TabsContent>
       </Tabs>
     </div>

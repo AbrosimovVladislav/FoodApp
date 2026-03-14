@@ -6,6 +6,8 @@ import type { DishFormValues } from '@/lib/validations/dish'
 
 export async function createDish(values: DishFormValues) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
 
   const { data: dish, error: dishError } = await supabase
     .from('dishes')
@@ -13,6 +15,7 @@ export async function createDish(values: DishFormValues) {
       name: values.name,
       description: values.description ?? null,
       meal_type: values.meal_type,
+      user_id: user.id,
     })
     .select('id')
     .single()
