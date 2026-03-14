@@ -14,7 +14,7 @@
 **Решения:**
 
 - Auth: нет (single-user, без логина)
-- AI: Claude claude-haiku-4-5 (голос → текст → парсинг + поиск КБЖУ новых продуктов)
+- AI: OpenAI — `gpt-4o-mini` для парсинга голоса и поиска КБЖУ новых продуктов (через `openai` npm SDK)
 - Figma: Untitled UI — FREE Figma UI kit and design system v2.0
 
 ---
@@ -23,32 +23,22 @@
 
 ---
 
-### Шаг 1 — Инфраструктура и дизайн-система
+### Шаг 1 — Инфраструктура и дизайн-система ✅ ВЫПОЛНЕН
 
-**Цель:** чистая база, готовая к разработке
+**Результат:** чистая база, готовая к разработке
 
-1. **Figma** — считать дизайн-токены (цвета, типографика, spacing) через Figma MCP
-2. **globals.css** — настроить `@theme` с токенами из Figma, подключить шрифты через `next/font`
-3. **layout.tsx** — применить шрифты, базовый фон
-4. **shadcn/ui** — инициализировать (`npx shadcn@latest init`), выбрать нужные компоненты
-5. **Supabase** — создать проект через MCP, настроить `.env.local`
-6. **Supabase schema** — создать миграцию с таблицами:
-  - `ingredients` (id, name, unit, calories_per_100g, protein, fat, carbs, category)
-  - `dishes` (id, name, description, meal_type: 'main'|'side'|'dessert')
-  - `dish_ingredients` (dish_id, ingredient_id, amount_g)
-  - `meal_plan` (id, date, slot: 'meal1'|'meal2'|'meal3', dish_id)
-  - `pantry` (id, ingredient_id, amount_g, updated_at)
-  - `shopping_list` (id, ingredient_id, amount_g, purchased: bool, week_start_date)
-  - `food_log` (id, date, dish_id, custom_note, total_calories, total_protein, total_fat, total_carbs)
-7. **TypeScript types** — сгенерировать через `supabase gen types` (Supabase MCP)
-8. **lib/supabase/** — создать `client.ts` и `server.ts`
+- ✅ **globals.css** — `@theme` с токенами, типографика (h1–h4, p), тёмная тема
+  - Фон: тёплый крем `#F8F6F1`, акцент: глубокий зелёный `#2D6A4F`
+- ✅ **Шрифты** — Instrument Serif (display) + Plus Jakarta Sans (body) через `next/font`
+- ✅ **layout.tsx** — шрифты применены, базовый фон
+- ✅ **shadcn/ui** — 12 компонентов: button, badge, card, dialog, input, label, progress, separator, sheet, skeleton, sonner, tabs
+- ✅ **Supabase** — проект создан, `.env.local` настроен
+- ✅ **Supabase schema** — 8 таблиц созданы в облаке, миграция: `supabase/migrations/001_initial_schema.sql`
+- ✅ **TypeScript types** — сгенерированы в `src/types/database.ts`
+- ✅ **lib/supabase/** — `client.ts` и `server.ts`
+- ✅ **Структура папок** — `hooks/`, `components/shared/`, `lib/validations/`
 
-**Проверка:**
-
-- `npm run dev` работает без ошибок
-- Supabase таблицы видны в Studio
-- Дизайн-токены применены (цвет фона, шрифт виден в браузере)
-- shadcn Button рендерится с правильными стилями
+→ **Переходим к Шагу 2**
 
 ---
 
@@ -64,9 +54,9 @@
 4. **Голосовой ввод** — кнопка записи голоса → `MediaRecorder API` → blob → отправка в API route
 5. **API route** `app/api/voice-parse/route.ts`:
   - Принимает аудио blob
-  - Отправляет в Claude claude-haiku-4-5 (через Anthropic SDK)
+  - Отправляет в OpenAI `gpt-4o-mini` (через `openai` SDK)
   - Промпт: распарсить блюдо, вернуть JSON `{name, ingredients: [{name, amount_g}]}`
-  - Для неизвестных ингредиентов — второй Claude-запрос: получить КБЖУ на 100г
+  - Для неизвестных ингредиентов — второй запрос к `gpt-4o-mini`: получить КБЖУ на 100г
   - Сохранить новые ингредиенты в `ingredients`
 6. **Расчёт КБЖУ** — хелпер `lib/calc-kbju.ts`:
   ```ts
@@ -157,7 +147,7 @@
 1. **Роут** `app/(app)/log/page.tsx` — лог по дням (date picker или недельный вид)
 2. **Дневная карточка** — план по КБЖУ vs факт, список блюд дня
 3. **"Съел вне плана"** — форма: ввести продукт / блюдо голосом или текстом
-  - Если продукт новый → Claude запрос → КБЖУ → сохранить в `ingredients`
+  - Если продукт новый → OpenAI запрос → КБЖУ → сохранить в `ingredients`
   - Добавить запись в `food_log`
 4. **Аналитика** `app/(app)/analytics/page.tsx`:
   - График ккал по дням (последние 30 дней)
@@ -195,8 +185,8 @@
 | Аспект        | Решение                                                                          |
 | ------------- | -------------------------------------------------------------------------------- |
 | Auth          | Нет — single-user                                                                |
-| AI            | Claude claude-haiku-4-5 — голос + КБЖУ новых продуктов                           |
-| Голос → текст | Browser `MediaRecorder` → API route → Claude                                     |
+| AI            | OpenAI `gpt-4o-mini` — голос + КБЖУ новых продуктов                              |
+| Голос → текст | Browser `MediaRecorder` → API route → OpenAI                                     |
 | КБЖУ расчёт   | Локально из БД (`lib/calc-kbju.ts`), AI только для новых                         |
 | State         | TanStack Query для server data, Zustand для UI state                             |
 | Routing       | `/planner`, `/dishes`, `/pantry`, `/shopping`, `/log`, `/analytics`, `/settings` |
