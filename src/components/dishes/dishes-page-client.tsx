@@ -41,25 +41,21 @@ export function DishesPageClient({ dishes, ingredients }: DishesPageClientProps)
       <Toaster position="top-center" />
 
       <div className="flex flex-col flex-1">
-        <PageHeader
-          title="Блюда"
-          right={
-            <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
-              <Plus className="w-4 h-4" />
-              Добавить
-            </Button>
-          }
-        />
+        <PageHeader title="Блюда" />
         <div className="px-4 pb-2">
           <Tabs defaultValue="dishes">
-            <TabsList className="w-full">
+            <TabsList className="w-full mb-4">
               <TabsTrigger value="dishes" className="flex-1">Блюда</TabsTrigger>
               <TabsTrigger value="ingredients" className="flex-1">Продукты</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="dishes" className="mt-4">
+            <TabsContent value="dishes" className="mt-0">
+              <Button onClick={openAdd} className="w-full h-11 gap-1.5 mb-4">
+                <Plus className="w-4 h-4" />
+                Добавить блюдо
+              </Button>
               {dishes.length === 0 ? (
-                <EmptyState onAdd={openAdd} />
+                <EmptyState />
               ) : (
                 <div className="flex flex-col gap-3 pb-6">
                   {dishes.map((dish) => (
@@ -70,7 +66,10 @@ export function DishesPageClient({ dishes, ingredients }: DishesPageClientProps)
             </TabsContent>
 
             <TabsContent value="ingredients" className="mt-0">
-              <IngredientsPageClient ingredients={ingredients} embedded />
+              <IngredientsPageClient
+                ingredients={ingredients}
+                embedded
+              />
             </TabsContent>
           </Tabs>
         </div>
@@ -93,7 +92,7 @@ export function DishesPageClient({ dishes, ingredients }: DishesPageClientProps)
   )
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
       <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center">
@@ -101,12 +100,8 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </div>
       <div className="flex flex-col gap-1">
         <p className="font-medium text-foreground">Блюд пока нет</p>
-        <p className="text-sm text-muted-foreground">Добавьте первое блюдо вручную или через голос</p>
+        <p className="text-sm text-muted-foreground">Нажмите кнопку выше, чтобы добавить первое блюдо</p>
       </div>
-      <Button onClick={onAdd} className="h-11 px-6">
-        <Plus className="w-4 h-4 mr-2" />
-        Добавить блюдо
-      </Button>
     </div>
   )
 }

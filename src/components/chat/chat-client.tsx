@@ -1,22 +1,24 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, ArrowUpRight } from 'lucide-react'
+import { Send, Bot, User, CheckCheck, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import type { TodayMealEntry } from '@/app/(app)/chat/page'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
 }
 
-const SUGGESTIONS = [
-  'Сколько калорий в гречке с фаршем?',
-  'Что можно приготовить из моих ингредиентов?',
-  'Составь план питания на день на 2000 ккал',
-]
+interface ChatClientProps {
+  todayEntries: TodayMealEntry[]
+  todayCalories: number
+  dailyLimit: number
+}
 
-export function ChatClient() {
+export function ChatClient({ todayEntries, todayCalories, dailyLimit }: ChatClientProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -78,11 +80,15 @@ export function ChatClient() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 ? (
-          <EmptyState onSuggest={send} />
+          <TodayPlan
+            entries={todayEntries}
+            todayCalories={todayCalories}
+            dailyLimit={dailyLimit}
+          />
         ) : (
           messages.map((msg, i) => <MessageBubble key={i} message={msg} />)
         )}
@@ -90,7 +96,7 @@ export function ChatClient() {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 border-t border-border bg-background px-4 py-3">
+      <div className="shrink-0 border-t border-border bg-background px-4 py-3 pb-4">
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -141,9 +147,20 @@ function MessageBubble({ message }: { message: Message }) {
   )
 }
 
-function EmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
+function TodayPlan({
+  entries,
+  todayCalories,
+  dailyLimit,
+}: {
+  entries: TodayMealEntry[]
+  todayCalories: number
+  dailyLimit: number
+}) {
+  const eatenCalories = entries.filter((e) => e.eaten).reduce((s, e) => s + e.calories, 0)
+  const caloriePercent = Math.min(100, (eatenCalories / dailyLimit) * 100)
+
   return (
-    <div className="flex flex-col gap-6 pt-4 px-1">
+    <div className="flex flex-col gap-4 pt-2 px-1">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
@@ -159,24 +176,71 @@ function EmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
 
       <div className="h-px bg-border" />
 
-      {/* Suggestions */}
-      <div className="flex flex-col gap-1.5">
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-1 px-1">
-          Попробуй спросить
-        </p>
-        {SUGGESTIONS.map((s, i) => (
-          <button
-            key={s}
-            onClick={() => onSuggest(s)}
-            className="group flex items-center gap-3 text-sm text-left px-4 py-3.5 rounded-xl border border-border bg-card hover:bg-secondary hover:border-primary/20 transition-colors"
-          >
-            <span className="text-xs font-mono text-muted-foreground/40 tabular-nums w-4 shrink-0">
-              {String(i + 1).padStart(2, '0')}
-            </span>
-            <span className="flex-1 text-foreground">{s}</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary shrink-0 transition-colors" />
-          </button>
-        ))}
+      {/* Today's plan */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+            План на сегодня
+          </p>
+          {entries.length > 0 && (
+            <p className="text-[11px] text-muted-foreground tabular-nums">
+              {eatenCalories} / {dailyLimit} ккал
+            </p>
+          )}
+        </div>
+
+        {entries.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <p className="text-sm text-muted-foreground">Сегодня ещё ничего не запланировано</p>
+            <p className="text-xs text-muted-foreground/60">Добавьте блюда в планировщике</p>
+          </div>
+        ) : (
+          <>
+            {/* Progress bar */}
+            <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  eatenCalories > dailyLimit ? 'bg-destructive' : 'bg-primary'
+                )}
+                style={{ width: `${caloriePercent}%` }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 mt-1">
+              {entries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-3.5 py-2.5',
+                    entry.eaten
+                      ? 'bg-primary/10 border border-primary/20'
+                      : 'bg-card border border-border'
+                  )}
+                >
+                  <div className="shrink-0">
+                    {entry.eaten ? (
+                      <CheckCheck className="w-4 h-4 text-primary" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      'text-sm font-medium truncate',
+                      entry.eaten ? 'text-primary' : 'text-foreground'
+                    )}>
+                      {entry.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.amount_g}г · {entry.calories} ккал
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

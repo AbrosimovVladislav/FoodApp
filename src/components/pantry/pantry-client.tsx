@@ -288,7 +288,7 @@ export function PantryClient({
         <PageHeader title="Запасы" />
 
         <Tabs defaultValue={defaultTab} className="flex flex-col flex-1">
-          <TabsList className="mx-4 mb-4">
+          <TabsList className="mb-4 w-full">
             <TabsTrigger value="pantry" className="flex-1 gap-1.5">
               <Refrigerator className="w-4 h-4" />
               Холодильник
@@ -430,9 +430,10 @@ export function PantryClient({
             ) : (
               <div className="flex flex-col gap-2">
                 {deficitItems.map((item) => (
-                  <div
+                  <button
                     key={item.ingredient.id}
-                    className="flex items-center gap-3 bg-card border border-border rounded-xl px-3.5 py-3"
+                    onClick={() => openBuySheet(item)}
+                    className="flex items-center gap-3 bg-card border border-border rounded-xl px-3.5 py-3 w-full text-left transition-colors hover:bg-secondary/30"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{item.ingredient.name}</p>
@@ -442,14 +443,8 @@ export function PantryClient({
                           : `нужно ${item.neededG}г`}
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      className="h-9 shrink-0"
-                      onClick={() => openBuySheet(item)}
-                    >
-                      Купил
-                    </Button>
-                  </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                  </button>
                 ))}
               </div>
             )}

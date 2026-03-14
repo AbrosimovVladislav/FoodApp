@@ -311,35 +311,36 @@ export function PlannerPageClient({
                   Эта неделя
                 </button>
               )}
-              {/* Voice button */}
-              <button
-                onClick={voiceState === 'recording' ? stopVoiceRecording : startVoiceRecording}
-                disabled={voiceState === 'processing'}
-                className={cn(
-                  'flex items-center gap-1.5 h-9 px-3 rounded-xl border text-sm font-medium transition-colors',
-                  voiceState === 'recording'
-                    ? 'border-destructive text-destructive bg-destructive/5'
-                    : voiceState === 'processing'
-                    ? 'border-border text-muted-foreground'
-                    : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
-                )}
-              >
-                {voiceState === 'processing' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : voiceState === 'recording' ? (
-                  <Square className="w-4 h-4 fill-current" />
-                ) : (
-                  <Mic className="w-4 h-4" />
-                )}
-                {voiceState === 'processing'
-                  ? 'Распознаю...'
-                  : voiceState === 'recording'
-                  ? 'Стоп'
-                  : 'Голос'}
-              </button>
               <LiveClock />
             </div>
           </div>
+
+          {/* Voice button — between header and week nav */}
+          <button
+            onClick={voiceState === 'recording' ? stopVoiceRecording : startVoiceRecording}
+            disabled={voiceState === 'processing'}
+            className={cn(
+              'w-full flex items-center justify-center gap-2 h-10 px-3 rounded-xl border text-sm font-medium transition-colors mb-3',
+              voiceState === 'recording'
+                ? 'border-destructive text-destructive bg-destructive/5'
+                : voiceState === 'processing'
+                ? 'border-border text-muted-foreground'
+                : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+            )}
+          >
+            {voiceState === 'processing' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : voiceState === 'recording' ? (
+              <Square className="w-4 h-4 fill-current" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+            {voiceState === 'processing'
+              ? 'Распознаю...'
+              : voiceState === 'recording'
+              ? 'Остановить запись'
+              : 'Голос — добавить в план'}
+          </button>
 
           {voiceState === 'recording' && (
             <p className="text-xs text-destructive text-center mb-2 animate-pulse">

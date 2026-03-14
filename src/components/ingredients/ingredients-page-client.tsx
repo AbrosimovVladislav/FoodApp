@@ -32,6 +32,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 interface IngredientsPageClientProps {
   ingredients: Ingredient[]
   embedded?: boolean
+  onAddExternal?: () => void
 }
 
 export function IngredientsPageClient({ ingredients, embedded }: IngredientsPageClientProps) {
@@ -82,10 +83,10 @@ export function IngredientsPageClient({ ingredients, embedded }: IngredientsPage
             }
           />
         ) : (
-          <div className="flex items-center justify-end pb-3 pt-0">
-            <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
+          <div className="pb-4 pt-0">
+            <Button onClick={openAdd} className="w-full h-11 gap-1.5">
               <Plus className="w-4 h-4" />
-              Добавить
+              Добавить продукт
             </Button>
           </div>
         )}

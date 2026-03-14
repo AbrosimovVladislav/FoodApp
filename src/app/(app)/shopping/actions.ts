@@ -51,10 +51,10 @@ export async function generateShoppingList(weekStartStr: string) {
 
   if (diError) return { success: false, error: diError.message }
 
-  // 3. Aggregate needed amounts by ingredient_id
+  // 3. Aggregate needed amounts by ingredient_id (skip already eaten entries)
   const needed = new Map<string, number>()
 
-  for (const entry of mealPlan) {
+  for (const entry of (mealPlan ?? []).filter((e) => e.eaten !== true)) {
     if (entry.dish_id && entry.amount_g) {
       const dis = dishIngredients?.filter((di) => di.dish_id === entry.dish_id) ?? []
       const totalDishWeight = dis.reduce((s, di) => s + di.amount_g, 0)
