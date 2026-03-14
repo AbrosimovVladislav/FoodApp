@@ -38,60 +38,33 @@
 - ✅ **lib/supabase/** — `client.ts` и `server.ts`
 - ✅ **Структура папок** — `hooks/`, `components/shared/`, `lib/validations/`
 
-→ **Переходим к Шагу 2**
+---
+
+### Шаг 2 — База блюд и ингредиентов (Dish Library) ✅ ВЫПОЛНЕН
+
+- ✅ **Роут** `app/(app)/dishes/page.tsx` — список всех блюд (server component, parallel fetches)
+- ✅ **`DishCard`** — название, тип, КБЖУ на порцию через `calcDishKBJU`
+- ✅ **Форма** `dish-form.tsx` — React Hook Form + Zod, динамические поля ингредиентов, grouped by category
+- ✅ **Голосовой ввод** `voice-input-button.tsx` — MediaRecorder → blob → API route
+- ✅ **API route** `app/api/voice-parse/route.ts` — Whisper (ru) → GPT-4o-mini → JSON, автосоздание новых ингредиентов с КБЖУ
+- ✅ **`lib/calc-kbju.ts`** — `calcDishKBJU()` + `roundKBJU()`
+- ✅ **Server Actions** — `createDish`, `updateDish`, `deleteDish`
+- ✅ **Страница ингредиентов** `app/(app)/ingredients/page.tsx` — CRUD, поиск, группировка по категории
+- ✅ **`bottom-nav.tsx`** — 5 пунктов навигации
+- ✅ **`app/(app)/layout.tsx`** — max-w-md, fixed bottom nav
 
 ---
 
-### Шаг 2 — База блюд и ингредиентов (Dish Library)
+### Шаг 3 — Холодильник (Pantry) ✅ ВЫПОЛНЕН
 
-**Цель:** экран управления блюдами — основной справочник приложения
+- ✅ **Роут** `app/(app)/pantry/page.tsx` — список ингредиентов с количеством (г)
+- ✅ **`PantryItem`** — название, остаток (г), кнопки ±50г (быстрая корректировка)
+- ✅ **Форма** — добавить/обновить позицию (upsert на conflict по ingredient_id)
+- ✅ **Server Actions** — `addPantryItem`, `updatePantryAmount`, `removePantryItem`
+- ✅ **Сортировка** — < 100г показывает предупреждение
+- ✅ **Таб "Покупки"** в `pantry-client.tsx` — placeholder, готов к интеграции с Шагом 5
 
-1. **Роут** `app/(app)/dishes/page.tsx` — список всех блюд
-2. **Компонент** `DishCard` — название, тип, КБЖУ на порцию (рассчитывается из ингредиентов)
-3. **Форма добавления блюда** — React Hook Form + Zod:
-  - Название, описание, тип (`main` / `side` / `dessert`)
-  - Список ингредиентов с граммовкой (динамические поля)
-4. **Голосовой ввод** — кнопка записи голоса → `MediaRecorder API` → blob → отправка в API route
-5. **API route** `app/api/voice-parse/route.ts`:
-  - Принимает аудио blob
-  - Отправляет в OpenAI `gpt-4o-mini` (через `openai` SDK)
-  - Промпт: распарсить блюдо, вернуть JSON `{name, ingredients: [{name, amount_g}]}`
-  - Для неизвестных ингредиентов — второй запрос к `gpt-4o-mini`: получить КБЖУ на 100г
-  - Сохранить новые ингредиенты в `ingredients`
-6. **Расчёт КБЖУ** — хелпер `lib/calc-kbju.ts`:
-  ```ts
-   function calcDishKBJU(dish_ingredients: DishIngredient[], ingredients: Ingredient[]): KBJU
-  ```
-7. **Server Actions** — `createDish`, `updateDish`, `deleteDish`
-
-**Компоненты:**
-
-- `components/dishes/dish-card.tsx`
-- `components/dishes/dish-form.tsx`
-- `components/dishes/voice-input-button.tsx`
-
-**Проверка:**
-
-- Добавить блюдо руками через форму → КБЖУ рассчиталось
-- Нажать запись голоса → произнести блюдо → форма заполнилась автоматически
-- Новый ингредиент из голоса сохранён в `ingredients` с КБЖУ
-
----
-
-### Шаг 3 — Холодильник (Pantry)
-
-**Цель:** экран управления остатками продуктов дома
-
-1. **Роут** `app/(app)/pantry/page.tsx` — список ингредиентов с количеством (г)
-2. **Компонент** `PantryItem` — название, остаток (г), кнопки +/- (быстрая корректировка)
-3. **Форма** — добавить/обновить позицию (ингредиент из справочника + количество)
-4. **Server Actions** — `updatePantryItem`, `addPantryItem`, `removePantryItem`
-5. **Отображение** — сортировка: сначала заканчивающиеся (< 100г — красный), потом остальные
-
-**Проверка:**
-
-- Добавить ингредиент в холодильник → виден в списке
-- Уменьшить количество до 0 → подсвечено как пустое
+→ **Переходим к Шагу 4**
 
 ---
 
