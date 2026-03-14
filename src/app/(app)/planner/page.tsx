@@ -13,7 +13,10 @@ function getMonday(date: Date): Date {
 }
 
 function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0]
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 export default async function PlannerPage({
@@ -24,7 +27,7 @@ export default async function PlannerPage({
   const params = await searchParams
   const weekStart = params.week ? new Date(params.week) : getMonday(new Date())
   const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekEnd.getDate() + 5)
+  weekEnd.setDate(weekEnd.getDate() + 6)
 
   const weekStartStr = toDateStr(weekStart)
   const weekEndStr = toDateStr(weekEnd)

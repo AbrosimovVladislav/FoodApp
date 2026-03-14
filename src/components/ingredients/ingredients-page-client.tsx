@@ -6,9 +6,28 @@ import { Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { PageHeader } from '@/components/shared/page-header'
 import { IngredientCard } from '@/components/ingredients/ingredient-card'
 import { IngredientForm } from '@/components/ingredients/ingredient-form'
 import type { Ingredient } from '@/types/database'
+
+const CATEGORY_LABELS: Record<string, string> = {
+  meat: 'Мясо и птица',
+  fish: 'Рыба и морепродукты',
+  dairy: 'Молочное',
+  eggs: 'Яйца',
+  vegetables: 'Овощи',
+  fruits: 'Фрукты',
+  grains: 'Крупы и злаки',
+  legumes: 'Бобовые',
+  nuts: 'Орехи и семена',
+  oils: 'Масла',
+  sauces: 'Соусы и специи',
+  bakery: 'Выпечка',
+  frozen: 'Замороженное',
+  drinks: 'Напитки',
+  other: 'Прочее',
+}
 
 interface IngredientsPageClientProps {
   ingredients: Ingredient[]
@@ -52,13 +71,24 @@ export function IngredientsPageClient({ ingredients, embedded }: IngredientsPage
 
       <div className="flex flex-col flex-1">
         {/* Header */}
-        <div className={embedded ? 'flex items-center justify-end pb-3 pt-0' : 'flex items-center justify-between px-4 pt-6 pb-4'}>
-          {!embedded && <h1 className="text-2xl">Продукты</h1>}
-          <Button size="sm" onClick={openAdd} className="h-10 gap-1.5">
-            <Plus className="w-4 h-4" />
-            Добавить
-          </Button>
-        </div>
+        {!embedded ? (
+          <PageHeader
+            title="Продукты"
+            right={
+              <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
+                <Plus className="w-4 h-4" />
+                Добавить
+              </Button>
+            }
+          />
+        ) : (
+          <div className="flex items-center justify-end pb-3 pt-0">
+            <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
+              <Plus className="w-4 h-4" />
+              Добавить
+            </Button>
+          </div>
+        )}
 
         {/* Search */}
         <div className={embedded ? 'pb-4' : 'px-4 pb-4'}>
@@ -86,7 +116,7 @@ export function IngredientsPageClient({ ingredients, embedded }: IngredientsPage
                 .map(([cat, ings]) => (
                   <div key={cat}>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                      {cat}
+                      {CATEGORY_LABELS[cat] ?? cat}
                     </p>
                     <div className="flex flex-col gap-2">
                       {ings.map((ing) => (

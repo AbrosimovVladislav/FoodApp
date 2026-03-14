@@ -5,6 +5,7 @@ import { Plus, UtensilsCrossed } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { PageHeader } from '@/components/shared/page-header'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { DishCard, type DishWithIngredients } from '@/components/dishes/dish-card'
 import { DishForm } from '@/components/dishes/dish-form'
@@ -40,8 +41,16 @@ export function DishesPageClient({ dishes, ingredients }: DishesPageClientProps)
       <Toaster position="top-center" />
 
       <div className="flex flex-col flex-1">
-        <div className="px-4 pt-6 pb-2">
-          <h1 className="text-2xl mb-4">Блюда</h1>
+        <PageHeader
+          title="Блюда"
+          right={
+            <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
+              <Plus className="w-4 h-4" />
+              Добавить
+            </Button>
+          }
+        />
+        <div className="px-4 pb-2">
           <Tabs defaultValue="dishes">
             <TabsList className="w-full">
               <TabsTrigger value="dishes" className="flex-1">Блюда</TabsTrigger>
@@ -49,12 +58,6 @@ export function DishesPageClient({ dishes, ingredients }: DishesPageClientProps)
             </TabsList>
 
             <TabsContent value="dishes" className="mt-4">
-              <div className="flex justify-end mb-3">
-                <Button size="sm" onClick={openAdd} className="h-10 gap-1.5">
-                  <Plus className="w-4 h-4" />
-                  Добавить
-                </Button>
-              </div>
               {dishes.length === 0 ? (
                 <EmptyState onAdd={openAdd} />
               ) : (

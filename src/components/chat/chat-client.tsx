@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User } from 'lucide-react'
+import { Send, Bot, User, ArrowUpRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -143,24 +143,38 @@ function MessageBubble({ message }: { message: Message }) {
 
 function EmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
   return (
-    <div className="flex flex-col items-center gap-6 py-12 px-2">
-      <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-        <Bot className="w-7 h-7 text-primary" />
+    <div className="flex flex-col gap-6 pt-4 px-1">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+          <Bot className="w-5 h-5 text-primary-foreground" />
+        </div>
+        <div>
+          <p className="font-display font-semibold text-foreground leading-tight">Помощник по питанию</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Знаю твой холодильник и базу блюд
+          </p>
+        </div>
       </div>
-      <div className="text-center">
-        <p className="font-medium text-foreground">Помощник по питанию</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Вижу вашу базу блюд и холодильник. Спросите что угодно.
+
+      <div className="h-px bg-border" />
+
+      {/* Suggestions */}
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-1 px-1">
+          Попробуй спросить
         </p>
-      </div>
-      <div className="flex flex-col gap-2 w-full">
-        {SUGGESTIONS.map((s) => (
+        {SUGGESTIONS.map((s, i) => (
           <button
             key={s}
             onClick={() => onSuggest(s)}
-            className="text-sm text-left px-4 py-3 rounded-xl border border-border bg-card hover:bg-accent transition-colors"
+            className="group flex items-center gap-3 text-sm text-left px-4 py-3.5 rounded-xl border border-border bg-card hover:bg-secondary hover:border-primary/20 transition-colors"
           >
-            {s}
+            <span className="text-xs font-mono text-muted-foreground/40 tabular-nums w-4 shrink-0">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <span className="flex-1 text-foreground">{s}</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary shrink-0 transition-colors" />
           </button>
         ))}
       </div>

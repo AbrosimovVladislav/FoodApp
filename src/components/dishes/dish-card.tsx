@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Pencil } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { calcDishKBJU, roundKBJU } from '@/lib/calc-kbju'
 import { MEAL_TYPE_LABELS } from '@/lib/validations/dish'
@@ -36,75 +35,36 @@ export function DishCard({ dish, onEdit }: DishCardProps) {
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className="font-medium text-foreground truncate">{dish.name}</span>
-          {dish.description && (
-            <span className="text-xs text-muted-foreground line-clamp-2">
-              {dish.description}
-            </span>
-          )}
+    <div className={cn(
+      'flex items-center gap-2 bg-card border border-border rounded-xl px-3.5 py-3',
+      deleting && 'opacity-50'
+    )}>
+      {/* Main tap area → edit */}
+      <button className="flex-1 min-w-0 text-left" onClick={() => onEdit(dish)}>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm text-foreground truncate flex-1">{dish.name}</span>
+          <span className="text-sm font-semibold text-primary tabular-nums shrink-0">
+            {kbju.calories} ккал
+          </span>
         </div>
-        <Badge variant="secondary" className="shrink-0 text-xs">
-          {MEAL_TYPE_LABELS[dish.meal_type] ?? dish.meal_type}
-        </Badge>
-      </div>
+        <div className="flex items-center gap-2 mt-1">
+          <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal shrink-0">
+            {MEAL_TYPE_LABELS[dish.meal_type] ?? dish.meal_type}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            Б {kbju.protein} · Ж {kbju.fat} · У {kbju.carbs}
+          </span>
+        </div>
+      </button>
 
-      <div className="grid grid-cols-4 gap-2">
-        <KBJUStat label="ккал" value={kbju.calories} accent />
-        <KBJUStat label="белки" value={kbju.protein} unit="г" />
-        <KBJUStat label="жиры" value={kbju.fat} unit="г" />
-        <KBJUStat label="углеводы" value={kbju.carbs} unit="г" />
-      </div>
-
-      <div className="flex gap-2 pt-1">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 h-10"
-          onClick={() => onEdit(dish)}
-        >
-          <Pencil className="w-3.5 h-3.5 mr-1.5" />
-          Изменить
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn('h-10 px-3 text-destructive hover:text-destructive', deleting && 'opacity-50')}
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function KBJUStat({
-  label,
-  value,
-  unit,
-  accent,
-}: {
-  label: string
-  value: number
-  unit?: string
-  accent?: boolean
-}) {
-  return (
-    <div className="flex flex-col items-center bg-secondary rounded-lg py-2 px-1">
-      <span
-        className={cn(
-          'text-sm font-semibold',
-          accent ? 'text-primary' : 'text-foreground'
-        )}
+      {/* Delete */}
+      <button
+        onClick={handleDelete}
+        disabled={deleting}
+        className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors shrink-0"
       >
-        {value}
-        {unit}
-      </span>
-      <span className="text-[10px] text-muted-foreground leading-tight">{label}</span>
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
     </div>
   )
 }

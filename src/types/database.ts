@@ -160,6 +160,7 @@ export type Database = {
           created_at: string | null
           date: string
           dish_id: string | null
+          eaten: boolean
           id: string
           ingredient_id: string | null
           slot: string
@@ -169,6 +170,7 @@ export type Database = {
           created_at?: string | null
           date: string
           dish_id?: string | null
+          eaten?: boolean
           id?: string
           ingredient_id?: string | null
           slot?: string
@@ -178,6 +180,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           dish_id?: string | null
+          eaten?: boolean
           id?: string
           ingredient_id?: string | null
           slot?: string

@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ChevronLeft, ChevronRight, X, Search, ChevronRight as ArrowRight } from 'lucide-react'
+import {
+  Plus, ChevronLeft, ChevronRight, Search, ChevronRight as ArrowRight,
+  Mic, Square, Loader2, Trash2, CheckCheck,
+} from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,21 +13,24 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import { LiveClock } from '@/components/shared/live-clock'
 import { calcDishKBJU, roundKBJU, type KBJU } from '@/lib/calc-kbju'
-import { addMealPlanEntry, removeMealPlanEntry } from '@/app/(app)/planner/actions'
+import { addMealPlanEntry, removeMealPlanEntry, updateMealPlanEntry, markAsEaten } from '@/app/(app)/planner/actions'
 import type { DishWithIngredients } from '@/components/dishes/dish-card'
 import type { Ingredient, MealPlan, Settings } from '@/types/database'
 
-const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 type PickerMode =
   | { step: 'list' }
   | { step: 'amount'; kind: 'dish'; dish: DishWithIngredients; amount: number }
   | { step: 'amount'; kind: 'ingredient'; ingredient: Ingredient; amount: number }
 
+type VoiceState = 'idle' | 'recording' | 'processing'
+
 function getWeekDates(weekStartStr: string): Date[] {
   const start = new Date(weekStartStr + 'T00:00:00')
-  return Array.from({ length: 6 }, (_, i) => {
+  return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start)
     d.setDate(d.getDate() + i)
     return d
@@ -112,10 +118,20 @@ export function PlannerPageClient({
   const [search, setSearch] = useState('')
   const [isPending, startTransition] = useTransition()
 
+  // Entry detail sheet
+  const [detailEntry, setDetailEntry] = useState<MealPlan | null>(null)
+  const [detailAmount, setDetailAmount] = useState('')
+
+  // Voice state
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle')
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+
   const weekDates = getWeekDates(weekStartStr)
   const today = toDateStr(new Date())
   const isCurrentWeek = weekDates.some((d) => toDateStr(d) === today)
 
+  // --- Picker ---
   function openPicker(date: string) {
     setPickerDate(date)
     setSearch('')
@@ -145,11 +161,120 @@ export function PlannerPageClient({
     })
   }
 
-  function handleRemove(id: string) {
+  // --- Entry detail ---
+  function openDetail(entry: MealPlan) {
+    setDetailEntry(entry)
+    setDetailAmount(String(entry.amount_g ?? ''))
+  }
+
+  function handleDetailSave() {
+    if (!detailEntry) return
+    const amount = Number(detailAmount)
+    if (!amount || amount <= 0) return
+    if (amount === detailEntry.amount_g) {
+      setDetailEntry(null)
+      return
+    }
+    setDetailEntry(null)
     startTransition(async () => {
-      const result = await removeMealPlanEntry(id)
+      const result = await updateMealPlanEntry(detailEntry.id, amount)
       if (!result.success) toast.error(result.error ?? 'Ошибка')
     })
+  }
+
+  function handleDetailRemove() {
+    if (!detailEntry) return
+    setDetailEntry(null)
+    startTransition(async () => {
+      const result = await removeMealPlanEntry(detailEntry.id)
+      if (!result.success) toast.error(result.error ?? 'Ошибка')
+    })
+  }
+
+  function handleDetailEat() {
+    if (!detailEntry || detailEntry.eaten) return
+    setDetailEntry(null)
+    startTransition(async () => {
+      const result = await markAsEaten(detailEntry.id)
+      if (!result.success) toast.error(result.error ?? 'Ошибка')
+      else toast.success('Списано из холодильника')
+    })
+  }
+
+  // --- Voice ---
+  async function startVoiceRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      chunksRef.current = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
+      }
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop())
+        setVoiceState('processing')
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        await processVoiceAudio(blob)
+      }
+
+      mediaRecorder.start()
+      setVoiceState('recording')
+    } catch {
+      toast.error('Нет доступа к микрофону')
+    }
+  }
+
+  function stopVoiceRecording() {
+    mediaRecorderRef.current?.stop()
+  }
+
+  async function processVoiceAudio(blob: Blob) {
+    try {
+      const fd = new FormData()
+      fd.append('audio', blob, 'recording.webm')
+      const res = await fetch('/api/voice-planner', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const { error } = await res.json() as { error: string }
+        throw new Error(error ?? 'Ошибка сервера')
+      }
+      const data = await res.json() as {
+        transcript: string
+        entries: {
+          date: string
+          dish_id?: string
+          ingredient_id?: string
+          amount_g: number
+          name: string
+        }[]
+      }
+
+      if (!data.entries.length) {
+        toast.info(`«${data.transcript}» — ничего не распознано`)
+        return
+      }
+
+      startTransition(async () => {
+        let successCount = 0
+        for (const e of data.entries) {
+          const result = await addMealPlanEntry({
+            date: e.date,
+            dishId: e.dish_id,
+            ingredientId: e.ingredient_id,
+            amount_g: e.amount_g,
+          })
+          if (result.success) successCount++
+        }
+        const names = data.entries.map((e) => `${e.name} ${e.amount_g}г`).join(', ')
+        toast.success(`Добавлено: ${names}`)
+      })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не удалось распознать')
+    } finally {
+      setVoiceState('idle')
+    }
   }
 
   const filteredDishes = dishes.filter((d) =>
@@ -159,24 +284,69 @@ export function PlannerPageClient({
     i.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Detail entry КБЖУ preview
+  const detailKbju = detailEntry
+    ? roundKBJU(calcEntryKBJU(
+        { ...detailEntry, amount_g: Number(detailAmount) || detailEntry.amount_g },
+        dishes,
+        ingredients
+      ))
+    : null
+
   return (
     <>
       <Toaster position="top-center" />
 
       <div className="flex flex-col flex-1">
         {/* Header */}
-        <div className="px-4 pt-6 pb-4">
+        <div className="px-4 pt-5 pb-4">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-2xl">Планировщик</h1>
-            {!isCurrentWeek && (
+            <div className="flex items-center gap-2">
+              {!isCurrentWeek && (
+                <button
+                  onClick={() => router.push('/planner')}
+                  className="text-xs text-primary font-medium"
+                >
+                  Эта неделя
+                </button>
+              )}
+              {/* Voice button */}
               <button
-                onClick={() => router.push('/planner')}
-                className="text-xs text-primary font-medium"
+                onClick={voiceState === 'recording' ? stopVoiceRecording : startVoiceRecording}
+                disabled={voiceState === 'processing'}
+                className={cn(
+                  'flex items-center gap-1.5 h-9 px-3 rounded-xl border text-sm font-medium transition-colors',
+                  voiceState === 'recording'
+                    ? 'border-destructive text-destructive bg-destructive/5'
+                    : voiceState === 'processing'
+                    ? 'border-border text-muted-foreground'
+                    : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                )}
               >
-                Эта неделя
+                {voiceState === 'processing' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : voiceState === 'recording' ? (
+                  <Square className="w-4 h-4 fill-current" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+                {voiceState === 'processing'
+                  ? 'Распознаю...'
+                  : voiceState === 'recording'
+                  ? 'Стоп'
+                  : 'Голос'}
               </button>
-            )}
+              <LiveClock />
+            </div>
           </div>
+
+          {voiceState === 'recording' && (
+            <p className="text-xs text-destructive text-center mb-2 animate-pulse">
+              Говорите... Например: «В субботу съел яблоко 80 грамм»
+            </p>
+          )}
+
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -189,7 +359,7 @@ export function PlannerPageClient({
             <span className="text-sm text-muted-foreground font-medium">
               {weekDates[0].toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
               {' — '}
-              {weekDates[5].toLocaleDateString('ru', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {weekDates[6].toLocaleDateString('ru', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
             <Button
               variant="ghost"
@@ -244,41 +414,35 @@ export function PlannerPageClient({
                 {/* Entries */}
                 {dayEntries.length > 0 && (
                   <div className="flex flex-col gap-2 mb-2">
-                    {dayEntries.map((entry, idx) => {
+                    {dayEntries.map((entry) => {
                       const kbju = roundKBJU(calcEntryKBJU(entry, dishes, ingredients))
                       const name = getEntryLabel(entry, dishes, ingredients)
-                      const isIngredient = !!entry.ingredient_id
                       return (
-                        <div key={entry.id} className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2.5">
+                        <button
+                          key={entry.id}
+                          onClick={() => openDetail(entry)}
+                          className={cn(
+                            'flex items-center gap-2 rounded-lg px-3 py-2.5 text-left w-full transition-colors',
+                            entry.eaten
+                              ? 'bg-primary/10 border border-primary/20'
+                              : 'bg-secondary hover:bg-secondary/70'
+                          )}
+                        >
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                                {idx + 1}
-                              </span>
-                              {isIngredient && (
-                                <span className="text-[10px] text-muted-foreground bg-border px-1.5 py-0.5 rounded">
-                                  продукт
-                                </span>
-                              )}
-                              {entry.amount_g && (
-                                <span className="text-[10px] text-muted-foreground ml-auto">
-                                  {entry.amount_g} г
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm font-medium truncate text-foreground leading-tight">{name}</p>
+                            <p className={cn(
+                              'text-sm font-medium truncate leading-tight',
+                              entry.eaten ? 'text-primary' : 'text-foreground'
+                            )}>
+                              {name}
+                            </p>
                             <p className="text-xs text-muted-foreground">
-                              {kbju.calories} ккал · Б{kbju.protein} Ж{kbju.fat} У{kbju.carbs}
+                              {entry.amount_g}г · {kbju.calories} ккал · Б{kbju.protein} Ж{kbju.fat} У{kbju.carbs}
                             </p>
                           </div>
-                          <button
-                            onClick={() => handleRemove(entry.id)}
-                            disabled={isPending}
-                            className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
+                          {entry.eaten && (
+                            <CheckCheck className="w-4 h-4 text-primary shrink-0" />
+                          )}
+                        </button>
                       )
                     })}
                   </div>
@@ -315,6 +479,107 @@ export function PlannerPageClient({
           })}
         </div>
       </div>
+
+      {/* Entry detail sheet */}
+      <Sheet open={!!detailEntry} onOpenChange={(open) => { if (!open) setDetailEntry(null) }}>
+        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8">
+          <SheetHeader className="mb-5">
+            <SheetTitle>
+              {detailEntry ? getEntryLabel(detailEntry, dishes, ingredients) : ''}
+            </SheetTitle>
+          </SheetHeader>
+
+          {detailEntry && (
+            <div className="flex flex-col gap-4">
+              {/* КБЖУ preview */}
+              {detailKbju && (
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'ккал', value: detailKbju.calories, accent: true },
+                    { label: 'белки', value: detailKbju.protein, accent: false },
+                    { label: 'жиры', value: detailKbju.fat, accent: false },
+                    { label: 'углеводы', value: detailKbju.carbs, accent: false },
+                  ].map(({ label, value, accent }) => (
+                    <div key={label} className="flex flex-col items-center bg-secondary rounded-lg py-2 px-1">
+                      <span className={cn('text-sm font-semibold', accent ? 'text-primary' : 'text-foreground')}>
+                        {value}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Amount */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Граммовка</label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={detailAmount}
+                  onChange={(e) => setDetailAmount(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleDetailSave() }}
+                  className="h-14 text-xl text-center"
+                  disabled={detailEntry.eaten}
+                />
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[50, 100, 200, 300].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setDetailAmount(String(v))}
+                    disabled={detailEntry.eaten}
+                    className="h-10 rounded-lg border border-border text-sm text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {v}г
+                  </button>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 mt-1">
+                {/* Eat button */}
+                {detailEntry.eaten ? (
+                  <div className="flex-1 h-12 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center gap-2 text-primary text-sm font-medium">
+                    <CheckCheck className="w-4 h-4" />
+                    Съедено
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 gap-2"
+                    onClick={handleDetailEat}
+                    disabled={isPending}
+                  >
+                    <CheckCheck className="w-4 h-4" />
+                    Съел
+                  </Button>
+                )}
+
+                {/* Save button */}
+                <Button
+                  className="flex-1 h-12"
+                  onClick={handleDetailSave}
+                  disabled={!detailAmount || Number(detailAmount) <= 0 || detailEntry.eaten}
+                >
+                  Сохранить
+                </Button>
+
+                {/* Delete */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 text-muted-foreground hover:text-destructive shrink-0"
+                  onClick={handleDetailRemove}
+                  disabled={isPending}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Picker Sheet */}
       <Sheet

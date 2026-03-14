@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils'
 const NAV_ITEMS = [
   { href: '/chat', label: 'Чат', icon: MessageCircle, also: [] },
   { href: '/planner', label: 'План', icon: CalendarDays, also: [] },
+  { href: '/pantry', label: 'Запасы', icon: Refrigerator, also: ['/shopping'] },
   { href: '/dishes', label: 'Блюда', icon: UtensilsCrossed, also: ['/ingredients'] },
-  { href: '/pantry', label: 'Запасы', icon: Refrigerator, also: [] },
   { href: '/settings', label: 'Настройки', icon: Settings, also: [] },
 ]
 
