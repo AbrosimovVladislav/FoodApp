@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import {
   addPantryItem, updatePantryAmount, removePantryItem, bulkUpdatePantry, buyIngredient,
 } from '@/app/(app)/pantry/actions'
+import { addManualShoppingItem } from '@/app/(app)/shopping/actions'
 import type { PantryItemWithIngredient } from '@/app/(app)/pantry/page'
 import type { Ingredient } from '@/types/database'
 
@@ -32,6 +33,7 @@ interface PantryClientProps {
   plannedConsumption: Record<string, number>
   missingIngredients: { ingredient: Ingredient; neededG: number }[]
   shortageItems: { ingredient: Ingredient; inPantryG: number; needMoreG: number }[]
+  weekStartStr: string
 }
 
 export function PantryClient({
@@ -41,6 +43,7 @@ export function PantryClient({
   plannedConsumption,
   missingIngredients,
   shortageItems,
+  weekStartStr,
 }: PantryClientProps) {
   const [, startTransition] = useTransition()
 
@@ -133,19 +136,19 @@ export function PantryClient({
     }
   }
 
-  // Manual buy action (shopping tab)
+  // Manual add to shopping list (Покупки tab)
   async function handleShopManualBuy() {
     if (!shopManualIngredientId) return
     const amount = Number(shopManualAmount)
     if (!amount || amount <= 0) return
     setShopManualSaving(true)
-    const result = await buyIngredient(shopManualIngredientId, amount)
+    const result = await addManualShoppingItem(shopManualIngredientId, amount, weekStartStr)
     setShopManualSaving(false)
     if (!result.success) {
       toast.error(result.error ?? 'Ошибка')
     } else {
       const ing = allIngredients.find((i) => i.id === shopManualIngredientId)
-      toast.success(`${ing?.name ?? 'Продукт'}: +${formatAmount(amount)} в холодильник`)
+      toast.success(`${ing?.name ?? 'Продукт'} добавлен в список покупок`)
       setShopManualOpen(false)
       setShopManualIngredientId('')
       setShopManualAmount('100')
@@ -568,11 +571,11 @@ export function PantryClient({
         </DialogContent>
       </Dialog>
 
-      {/* Manual buy sheet (shopping tab) */}
+      {/* Manual add to shopping list (Покупки tab) */}
       <Sheet open={shopManualOpen} onOpenChange={(open) => { if (!open) setShopManualOpen(false) }}>
         <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8">
           <SheetHeader className="mb-6">
-            <SheetTitle>Добавить в холодильник</SheetTitle>
+            <SheetTitle>Добавить в список покупок</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -600,25 +603,25 @@ export function PantryClient({
               disabled={!shopManualIngredientId || shopManualSaving}
               className="h-12 mt-1"
             >
-              {shopManualSaving ? 'Сохранение...' : 'В холодильник'}
+              {shopManualSaving ? 'Сохранение...' : 'В список покупок'}
             </Button>
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* Buy sheet */}
-      <Sheet open={!!buyItem} onOpenChange={(open) => { if (!open) setBuyItem(null) }}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8">
-          <SheetHeader className="mb-5">
-            <SheetTitle>{buyItem?.ingredient.name}</SheetTitle>
-          </SheetHeader>
+      {/* Buy dialog (centered) */}
+      <Dialog open={!!buyItem} onOpenChange={(open) => { if (!open) setBuyItem(null) }}>
+        <DialogContent showCloseButton={false} className="px-5 py-5">
+          <DialogHeader className="mb-1">
+            <DialogTitle>{buyItem?.ingredient.name}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mb-2">
+            По плану нужно:{' '}
+            <span className="text-foreground font-medium">
+              {buyItem ? formatAmount(buyItem.neededG) : ''}
+            </span>
+          </p>
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
-              По плану нужно:{' '}
-              <span className="text-foreground font-medium">
-                {buyItem ? formatAmount(buyItem.neededG) : ''}
-              </span>
-            </p>
             <div className="flex flex-col gap-1.5">
               <Label>Сколько купили (г)</Label>
               <Input
@@ -631,7 +634,18 @@ export function PantryClient({
                 autoFocus
               />
             </div>
-            <div className="flex gap-3 mt-1">
+            <div className="grid grid-cols-4 gap-2">
+              {[100, 200, 500, 1000].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setBuyAmount(String(v))}
+                  className="h-10 rounded-lg border border-border text-sm text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors"
+                >
+                  {v}г
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-1">
               <Button variant="outline" className="flex-1 h-12" onClick={() => setBuyItem(null)}>
                 Отмена
               </Button>
@@ -644,8 +658,8 @@ export function PantryClient({
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

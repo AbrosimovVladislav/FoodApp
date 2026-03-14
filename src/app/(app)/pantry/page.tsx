@@ -127,6 +127,7 @@ export default async function PantryPage({
       plannedConsumption={plannedConsumption}
       missingIngredients={missingIngredients}
       shortageItems={shortageItems}
+      weekStartStr={weekStart}
     />
   )
 }
