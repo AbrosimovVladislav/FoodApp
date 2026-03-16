@@ -117,6 +117,7 @@ export function ShoppingClient({ items, ingredients, weekStartStr }: ShoppingCli
             ? 'Всё есть в холодильнике!'
             : `Список обновлён: ${result.count} позиций`
         )
+        router.refresh()
       }
     })
   }
@@ -127,6 +128,7 @@ export function ShoppingClient({ items, ingredients, weekStartStr }: ShoppingCli
         ? await unmarkPurchased(item.id)
         : await markPurchased(item.id)
       if (!result.success) toast.error(result.error ?? 'Ошибка')
+      else router.refresh()
     })
   }
 
@@ -134,24 +136,30 @@ export function ShoppingClient({ items, ingredients, weekStartStr }: ShoppingCli
     startTransition(async () => {
       const result = await removeShoppingItem(id)
       if (!result.success) toast.error(result.error ?? 'Ошибка')
+      else router.refresh()
     })
   }
 
   function handleAddManual() {
     if (!selectedIngredient || manualAmount <= 0) return
+    const ingredient = selectedIngredient
+    const amount = manualAmount
     setAddOpen(false)
-    startTransition(async () => {
-      const result = await addManualShoppingItem(
-        selectedIngredient.id,
-        manualAmount,
-        weekStartStr
-      )
-      if (!result.success) toast.error(result.error ?? 'Ошибка')
-      else toast.success(`${selectedIngredient.name} добавлен`)
-    })
     setSelectedIngredient(null)
     setManualAmount(100)
     setManualSearch('')
+    startTransition(async () => {
+      const result = await addManualShoppingItem(
+        ingredient.id,
+        amount,
+        weekStartStr
+      )
+      if (!result.success) toast.error(result.error ?? 'Ошибка')
+      else {
+        toast.success(`${ingredient.name} добавлен`)
+        router.refresh()
+      }
+    })
   }
 
   async function startVoiceRecording() {
